@@ -276,15 +276,18 @@ namespace TvService
           TimeSpan ts = DateTime.Now - TransponderList.Instance.CurrentTransponder.CurrentChannel.LastGrabTime;
           if (ts.TotalMinutes < _epgReGrabAfter)
           {
-            //Log.Epg("Skip card:#{0} transponder #{1}/{2} channel: {3} - Less than regrab time",
-            //         epgCard.Card.IdCard, TransponderList.Instance.CurrentIndex + 1, TransponderList.Instance.Count, ch.DisplayName);
-            continue; // less then 2 hrs ago
+            //Log.Epg("Skip card:#{0} transponder #{1}/{2} channel: {3} - Less than regrab time. last grabbed: {4} regrab: {5}",
+            //         epgCard.Card.IdCard, TransponderList.Instance.CurrentIndex + 1, TransponderList.Instance.Count,
+            //         ch.DisplayName, TransponderList.Instance.CurrentTransponder.CurrentChannel.LastGrabTime.ToString(),
+            //         _epgReGrabAfter);
+            continue;
           }
           if (epgCard.Card.canTuneTvChannel(ch.IdChannel))
           {
-            Log.Epg("Grab for card:#{0} transponder #{1}/{2} channel: {3}",
+            Log.Epg("Grab for card:#{0} transponder #{1}/{2} channel: {3} last grabbed: {4} regrab: {5}",
                     epgCard.Card.IdCard, TransponderList.Instance.CurrentIndex + 1, TransponderList.Instance.Count,
-                    ch.DisplayName);
+                    ch.DisplayName, TransponderList.Instance.CurrentTransponder.CurrentChannel.LastGrabTime.ToString(),
+                    _epgReGrabAfter);
             //start grabbing
             epgCard.GrabEpg();
             return;

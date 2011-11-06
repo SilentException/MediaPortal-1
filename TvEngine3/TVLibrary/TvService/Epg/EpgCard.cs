@@ -257,6 +257,8 @@ namespace TvService
       Log.Epg("EpgCard: unable to grab epg transponder: {0} ch: {1} started on {2}",
               TransponderList.Instance.CurrentIndex, channel.DisplayName, _user.CardId);
       Log.Epg("{0}", _currentTransponder.Tuning.ToString());
+      _currentTransponder.CurrentChannel.LastGrabTime = DateTime.Now;
+      _currentTransponder.CurrentChannel.Persist();
     }
 
     /// <summary>
