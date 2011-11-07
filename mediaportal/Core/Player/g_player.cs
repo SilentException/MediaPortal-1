@@ -37,6 +37,7 @@ using Un4seen.Bass;
 using Un4seen.Bass.AddOn.Cd;
 using Action = MediaPortal.GUI.Library.Action;
 using MediaPortal.Player.Subtitles;
+using System.Threading;
 
 namespace MediaPortal.Player
 {
@@ -65,6 +66,7 @@ namespace MediaPortal.Player
     #region variables
 
     private static MediaInfoWrapper _mediaInfo = null;
+    private static Thread _delayedrefreshratechanger = null;
     private static int _currentStep = 0;
     private static int _currentStepIndex = -1;
     private static DateTime _seekTimer = DateTime.MinValue;
@@ -590,6 +592,11 @@ namespace MediaPortal.Player
       }
       if (_player != null)
       {
+        if (_delayedrefreshratechanger != null)
+        {
+          _delayedrefreshratechanger.Abort();
+          _delayedrefreshratechanger = null;
+        }
         Log.Debug("g_Player.doStop() keepTimeShifting = {0} keepExclusiveModeOn = {1}", keepTimeShifting,
                   keepExclusiveModeOn);
         OnStopped();
@@ -1225,6 +1232,12 @@ namespace MediaPortal.Player
           ChangeDriveSpeed(strFile, DriveType.CD);
         }
 
+        if (_delayedrefreshratechanger != null)
+        {
+          _delayedrefreshratechanger.Abort();
+          _delayedrefreshratechanger = null;
+        }
+
         _mediaInfo = new MediaInfoWrapper(strFile);
         Starting = true;
 
@@ -1235,22 +1248,32 @@ namespace MediaPortal.Player
             Log.Debug("g_Player.Play - Mediatype Unknown, forcing detection as Video");
             type = MediaType.Video;
           }
-          // refreshrate change done here.
-          RefreshRateChanger.AdaptRefreshRate(strFile, (RefreshRateChanger.MediaType)(int)type);
 
-          if (RefreshRateChanger.RefreshRateChangePending)
+          if (_mediaInfo == null || _mediaInfo.Framerate <= 0)
           {
-            TimeSpan ts = DateTime.Now - RefreshRateChanger.RefreshRateChangeExecutionTime;
-            if (ts.TotalSeconds > RefreshRateChanger.WAIT_FOR_REFRESHRATE_RESET_MAX)
+            // using DelayedRefreshrateChanger
+            _delayedrefreshratechanger = new Thread(delegate() { RefreshRateChanger.DelayedRefreshrateChanger(strFile, type); });
+            _delayedrefreshratechanger.Start();
+          }
+          else
+          {
+            // refreshrate change done here.
+            RefreshRateChanger.AdaptRefreshRate(strFile, (RefreshRateChanger.MediaType)(int)type, _mediaInfo.Framerate);
+
+            if (RefreshRateChanger.RefreshRateChangePending)
             {
-              Log.Info(
-                "g_Player.Play - waited {0}s for refreshrate change, but it never took place (check your config). Proceeding with playback.",
-                RefreshRateChanger.WAIT_FOR_REFRESHRATE_RESET_MAX);
-              RefreshRateChanger.ResetRefreshRateState();
-            }
-            else
-            {
-              return true;
+              TimeSpan ts = DateTime.Now - RefreshRateChanger.RefreshRateChangeExecutionTime;
+              if (ts.TotalSeconds > RefreshRateChanger.WAIT_FOR_REFRESHRATE_RESET_MAX)
+              {
+                Log.Info(
+                  "g_Player.Play - waited {0}s for refreshrate change, but it never took place (check your config). Proceeding with playback.",
+                  RefreshRateChanger.WAIT_FOR_REFRESHRATE_RESET_MAX);
+                RefreshRateChanger.ResetRefreshRateState();
+              }
+              else
+              {
+                return true;
+              }
             }
           }
         }
