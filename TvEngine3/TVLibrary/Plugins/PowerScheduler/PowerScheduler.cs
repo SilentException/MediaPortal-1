@@ -843,7 +843,12 @@ namespace TvEngine.PowerScheduler
               SendPowerSchedulerEvent(PowerSchedulerEventType.Elapsed);
             }
             else
+            {
               CheckForStandby(false);
+              //Thread.Sleep(10000);
+              // STEFAN: it is enough to call it every 10s
+              _stopThread.WaitOne(10000);
+            }
           }
           catch (Exception ex)
           {

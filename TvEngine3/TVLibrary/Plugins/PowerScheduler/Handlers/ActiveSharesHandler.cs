@@ -194,6 +194,8 @@ namespace TvEngine.PowerScheduler.Handlers
     #region Variables
 
     private bool _enabled = false;
+    private bool _laststandbyreturnvalue = false;
+    DateTime _lastprinttime = DateTime.MinValue;
     private List<ShareMonitor> _sharesToMonitor = new List<ShareMonitor>();
 
     private ManagementObjectSearcher _searcher = new ManagementObjectSearcher(
@@ -302,13 +304,23 @@ namespace TvEngine.PowerScheduler.Handlers
             {
               if (shareBeingMonitored.Equals(connection))
               {
-                Log.Debug("{0}: Standby cancelled due to connection '{1}:{2}' on share '{3}'", HandlerName,
-                          connection.UserName, connection.ComputerName, connection.ShareName);
+                if (_laststandbyreturnvalue == false || DateTime.Now.Subtract(_lastprinttime).TotalSeconds > 60)
+                {
+                  Log.Debug("{0}: Standby cancelled due to connection '{1}:{2}' on share '{3}'", HandlerName,
+                            connection.UserName, connection.ComputerName, connection.ShareName);
+                  _lastprinttime = DateTime.Now;
+                  _laststandbyreturnvalue = true;
+                }
                 return true;
               }
             }
           }
-          Log.Debug("{0}: have not found any matching connections - will allow standby", HandlerName);
+          if (_laststandbyreturnvalue == true || DateTime.Now.Subtract(_lastprinttime).TotalSeconds > 60)
+          {
+            Log.Debug("{0}: have not found any matching connections - will allow standby", HandlerName);
+            _lastprinttime = DateTime.Now;
+            _laststandbyreturnvalue = false;
+          }
           return false;
         }
         return false;
