@@ -370,7 +370,7 @@ namespace MediaPortal.Util
     /// <param name="library">The library that holds the method.</param>
     /// <param name="method">The entry point of the requested method.</param>
     /// <returns>True if the specified method is present, false otherwise.</returns>
-    protected static bool CheckEntryPoint(string library, string method)
+    public static bool CheckEntryPoint(string library, string method)
     {
       IntPtr libPtr = LoadLibrary(library);
       if (!libPtr.Equals(IntPtr.Zero))

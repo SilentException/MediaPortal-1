@@ -538,7 +538,9 @@ namespace MediaPortal.Player
     /// </summary>
     public double GetEVRVideoFPS(int fpsSource)
     {
-      return EVRGetVideoFPS(fpsSource);
+      if (WindowsController.CheckEntryPoint("dshowhelper.dll", "EVRGetVideoFPS"))
+        return EVRGetVideoFPS(fpsSource);
+      return 0;
     }
 
     /// <summary>
@@ -548,7 +550,8 @@ namespace MediaPortal.Player
     /// </summary>
     public void UpdateEVRDisplayFPS()
     {
-      EVRUpdateDisplayFPS();
+      if (WindowsController.CheckEntryPoint("dshowhelper.dll", "EVRUpdateDisplayFPS"))
+        EVRUpdateDisplayFPS();
     }
 
     /// <summary>

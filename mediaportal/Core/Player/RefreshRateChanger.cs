@@ -731,7 +731,7 @@ namespace MediaPortal.Player
       }
 
       // wait that the video file is played a while
-      Thread.Sleep(5000);
+      Thread.Sleep(2000);
 
       do
       {
