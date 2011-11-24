@@ -68,6 +68,7 @@ namespace MediaPortal.GUI.Library
     public static void Hide()
     {
       Interlocked.Decrement(ref _showCount);
+      Interlocked.CompareExchange(ref _showCount, 0, -1);
       guiWaitCursorThread = null;
       _elapsedEventRunning = false;
       _countDown = false;
