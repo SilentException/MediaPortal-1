@@ -150,7 +150,8 @@ namespace MediaPortal.GUI.Library
 
           fRange = (float)(_intEndValue - _intStartValue);
           fPos = (float)(_intValue - _intStartValue);
-          _percentage = (int)((fPos / fRange) * 100.0f);
+          fPercent = (fPos / fRange) * 100.0f;
+          _percentage = (int)fPercent;
           break;
       }
 
