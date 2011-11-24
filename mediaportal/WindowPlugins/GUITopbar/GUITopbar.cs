@@ -119,7 +119,13 @@ namespace MediaPortal.Topbar
 
     protected override bool ShouldFocus(Action action)
     {
-      return (action.wID == Action.ActionType.ACTION_MOVE_UP);
+      return (action.wID == Action.ActionType.ACTION_MOVE_UP)
+             &&
+             (
+               GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).GetControl(GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).PreviousFocusedId).NavigateUp == GetID ||
+               GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).GetControl(GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).PreviousFocusedId).NavigateUp == 17 ||
+               GetControl(GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).GetControl(GUIWindowManager.GetWindow(GUIWindowManager.ActiveWindow).PreviousFocusedId).NavigateUp) != null
+             );
     }
 
     public void CheckFocus()
