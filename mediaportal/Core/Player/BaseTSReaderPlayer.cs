@@ -138,6 +138,8 @@ namespace MediaPortal.Player
     protected bool _isStarted = false;
     protected bool _isLive = false;
     protected double _lastPosition = 0;
+    // This is a workaround for mantis / bug 0002914
+    protected double _lastaudiochangepos = 0;
     protected bool _isWindowVisible = false;
     protected DsROTEntry _rotEntry = null;
     protected int _aspectX = 1;
@@ -642,9 +644,25 @@ namespace MediaPortal.Player
       }
       if (_bRequestAudioChange)
       {
-        Log.Info("TSReaderPlayer:OnRequestAudioChange()");
         _bRequestAudioChange = false;
-        g_Player.OnAudioTracksReady();
+        /* 
+         * This is a workaround for mantis / bug 0002914
+         * It cancels the AudioChange loop - by skipping the request if it
+         * happens in the same second - so this assumes that you normally
+         * won't have two channel changes in ONE second.
+         * The values are stored as doubles but it checks only for whole seconds
+         * as the resolution of 1s should be big enough
+         */
+        if (_lastaudiochangepos == 0 || g_Player.CurrentPosition == 0 || (int)_lastaudiochangepos != (int)g_Player.CurrentPosition)
+        {
+          Log.Info("TSReaderPlayer:OnRequestAudioChange()");
+          _lastaudiochangepos = g_Player.CurrentPosition;
+          g_Player.OnAudioTracksReady();
+        }
+        else
+        {
+          Log.Info("TSReaderPlayer:OnRequestAudioChange(): Skipping");
+        }
       }
 
       _startingUp = false;
@@ -1441,6 +1459,11 @@ namespace MediaPortal.Player
     public int OnVideoFormatChanged(int streamType, int width, int height, int aspectRatioX, int aspectRatioY,
                                     int bitrate, int isInterlaced)
     {
+      //reconnect filters, not all codecs can handle channel switching between channels with a different video format.
+      //iChangedMediaTypes = 2;
+      //_bMediaTypeChanged = true;
+      //SE: probably not needed 
+
       _isRadio = false;
       _videoFormat.IsValid = true;
       _videoFormat.streamType = (VideoStreamType)streamType;
