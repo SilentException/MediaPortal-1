@@ -172,7 +172,9 @@ public class MyTetrisControl : GUIControl, IHostTetris
         int x = _positionX + ((_width - m_cxPaused) / 2);
         int y = _positionY + ((_height - m_cyPaused) / 2);
 
-        m_Font.DrawText(x, y - m_cyPaused, m_dwTextColor, m_strPaused, Alignment.ALIGN_LEFT, -1);
+        uint col = (uint)m_dwTextColor;
+        col = GUIGraphicsContext.MergeAlpha(col);
+        m_Font.DrawText(x, y - m_cyPaused, col, m_strPaused, Alignment.ALIGN_LEFT, -1);
       }
       else if (m_theGame.State == State.Stopped)
       {
@@ -190,7 +192,9 @@ public class MyTetrisControl : GUIControl, IHostTetris
         int x = _positionX + ((_width - m_cxGameOver) / 2);
         int y = _positionY + ((_height - m_cyGameOver) / 2);
 
-        m_Font.DrawText(x, y - m_cyGameOver, m_dwTextColor, m_strGameOver, Alignment.ALIGN_LEFT, -1);
+        uint col = (uint)m_dwTextColor;
+        col = GUIGraphicsContext.MergeAlpha(col);
+        m_Font.DrawText(x, y - m_cyGameOver, col, m_strGameOver, Alignment.ALIGN_LEFT, -1);
       }
     }
     else
@@ -209,7 +213,9 @@ public class MyTetrisControl : GUIControl, IHostTetris
       int x = _positionX + ((_width - m_cxPressToStart) / 2);
       int y = _positionY + ((_height - m_cyPressToStart) / 2);
 
-      m_Font.DrawText(x, y - m_cyPressToStart, m_dwTextColor, m_strStart, Alignment.ALIGN_LEFT, -1);
+      uint col = (uint)m_dwTextColor;
+      col = GUIGraphicsContext.MergeAlpha(col);
+      m_Font.DrawText(x, y - m_cyPressToStart, col, m_strStart, Alignment.ALIGN_LEFT, -1);
     }
   }
 
@@ -513,6 +519,8 @@ public class MyTetrisControl : GUIControl, IHostTetris
 
   public override void Render(float timePassed)
   {
+    base.Render(timePassed);
+
     if (GUIGraphicsContext.EditMode == false && IsVisible == false)
     {
       return;
