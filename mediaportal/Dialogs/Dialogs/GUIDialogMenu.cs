@@ -160,6 +160,7 @@ namespace MediaPortal.Dialogs
         case GUIMessage.MessageType.GUI_MSG_WINDOW_DEINIT:
           {
             lblHeading.Label = string.Empty;
+            GUIPropertyManager.SetProperty("#heading.label", " ");
             if (lblHeading2 != null)
             {
               lblHeading2.Label = string.Empty;
@@ -202,6 +203,7 @@ namespace MediaPortal.Dialogs
       showQuickNumbers = true;
       selectedItemIndex = -1;
       selectedItemLabel = string.Empty;
+      GUIPropertyManager.SetProperty("#heading.label", " ");
     }
 
     public override void DoModal(int dwParentId)
@@ -346,6 +348,7 @@ namespace MediaPortal.Dialogs
       InitControls();
 
       lblHeading.Label = strLine;
+      GUIPropertyManager.SetProperty("#heading.label", strLine);
       if (lblHeading2 != null)
       {
         if (strLine.Length < 1)
