@@ -485,6 +485,8 @@ namespace TvPlugin
       lstUpcomingEpsiodes.Clear();
       TvBusinessLayer layer = new TvBusinessLayer();
       DateTime dtDay = DateTime.Now;
+      if (initialProgram == null)
+        initialProgram = currentProgram;
 
       // build a list of all upcoming instances of program from EPG data based on program name alone
       List<Program> episodes = (List<Program>)layer.SearchMinimalPrograms(dtDay, dtDay.AddDays(28), initialProgram.Title, null);
@@ -641,7 +643,8 @@ namespace TvPlugin
         lstUpcomingEpsiodes.SelectedListItemIndex = itemToSelect;
       }
 
-      lblUpcomingEpsiodes.Label = GUILocalizeStrings.Get(1203, new object[] { activeRecordings });
+      if (null != lblUpcomingEpsiodes)
+        lblUpcomingEpsiodes.Label = GUILocalizeStrings.Get(1203, new object[] { activeRecordings });
 
       //set object count label
       GUIPropertyManager.SetProperty("#itemcount", Utils.GetObjectCountLabel(lstUpcomingEpsiodes.ListItems.Count));
