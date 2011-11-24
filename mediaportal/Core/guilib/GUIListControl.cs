@@ -3348,6 +3348,7 @@ namespace MediaPortal.GUI.Library
       }
       _upDownControl.SetRange(1, iPages);
       _upDownControl.Value = 1;
+      //OnSelectionChanged(); - SE: might cause problems
       _refresh = true;
     }
 
