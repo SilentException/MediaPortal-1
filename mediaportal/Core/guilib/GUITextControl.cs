@@ -113,6 +113,7 @@ namespace MediaPortal.GUI.Library
                                           _upTextureNameFocus, _downTextureNameFocus, _fontName, _colorSpinColor,
                                           GUISpinControl.SpinType.SPIN_CONTROL_TYPE_INT, Alignment.ALIGN_LEFT);
       _upDownControl.ParentControl = this;
+      _upDownControl.SetNavigation(_upControlId, _downControlId, _leftControlId, _rightControlId);
       _font = GUIFontManager.GetFont(_fontName);
       if (_property.IndexOf("#") >= 0)
       {
