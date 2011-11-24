@@ -24,7 +24,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows.Controls;
 using System.Windows.Serialization;
 using System.Xml;
@@ -516,6 +518,51 @@ namespace MediaPortal.GUI.Library
       return dic;
     }
 
+    private static string ParseDefine(IDictionary<string, string> defines, string define)
+    {
+      for (int i = define.Length; i > 1; i--)
+      {
+        // if the property is not an existing property we iterate through every
+        // substring of the value untill we find the property, we replace the substring with
+        // the value of the property and in turn leave the overhead string intact.
+        string tag = define.Substring(0, i);
+        string foundDefine = null;
+        if (defines.TryGetValue(tag, out foundDefine))
+        {
+          return foundDefine;
+        }
+        else if (_cachedDefines.TryGetValue(tag, out foundDefine))
+        {
+          return define.Replace(tag, foundDefine);
+        }
+      }
+
+      return define;
+    }
+
+    public static string ParseDefines(IDictionary<string, string> defines, string line)
+    {
+      if (line == null)
+      {
+        return string.Empty;
+      }
+
+      if (line.IndexOf('#') > -1)
+      {
+        // Matches a property tag and replaces it with the value for that property
+        // sort the matches descending by the length of their value, to prevent a match named "#selecteditem" replacing "#selecteditem2" in the line
+        var matches = from Match aMatch in GUIPropertyManager.propertyExpr.Matches(line)
+                      orderby aMatch.Value.Length descending
+                      select aMatch.Value;
+        foreach (string match in matches)
+        {
+          line = line.Replace(match, ParseDefine(defines, match));
+        }
+      }
+
+      return line;
+    }
+
     private static void UpdateControlWithXmlData(GUIControl control, Type controlType, XmlNode pControlNode,
                                                  IDictionary<string, string> defines, string filename)
     {
@@ -540,8 +587,10 @@ namespace MediaPortal.GUI.Library
               if (correspondingMemberAttr != null)
               {
                 string text = attribNode.Value;
+                text = ParseDefines(defines, text);
 
                 // Window defines (passed in) override references defines (cached).
+                /*
                 if (text.Length > 0 && text[0] == '#')
                 {
                   string foundDefine = null;
@@ -557,6 +606,7 @@ namespace MediaPortal.GUI.Library
                     }
                   }
                 }
+                */
 
                 object newValue = null;
 
@@ -703,8 +753,10 @@ namespace MediaPortal.GUI.Library
         if (correspondingMember != null)
         {
           string text = element.InnerText;
+          text = ParseDefines(defines, text);
 
           // Window defines (passed in) override references defines (cached).
+          /*
           if (text.Length > 0 && text[0] == '#')
           {
             string foundDefine = null;
@@ -721,6 +773,7 @@ namespace MediaPortal.GUI.Library
               }
             }
           }
+          */
 
           object newValue = null;
 
