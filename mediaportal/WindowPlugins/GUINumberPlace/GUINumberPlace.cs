@@ -335,7 +335,8 @@ namespace MediaPortal.GUI.NumberPlace
         }
         if (gameRunning)
         {
-          ResumeTimer();
+          //ResumeTimer();
+          ClearGrid();
         }
 
         UpdateButtonStates();
@@ -512,16 +513,16 @@ namespace MediaPortal.GUI.NumberPlace
       switch ((LevelName)_Settings.Level)
       {
         case LevelName.Kids:
-          textLine += GUILocalizeStrings.Get(19115); // kids
+          textLine += " " + GUILocalizeStrings.Get(19115); // kids
           break;
         case LevelName.Easy:
-          textLine += GUILocalizeStrings.Get(19108); // easy
+          textLine += " " + GUILocalizeStrings.Get(19108); // easy
           break;
         case LevelName.Medium:
-          textLine += GUILocalizeStrings.Get(19109); // medium
+          textLine += " " + GUILocalizeStrings.Get(19109); // medium
           break;
         case LevelName.Hard:
-          textLine += GUILocalizeStrings.Get(19110); // difficult
+          textLine += " " + GUILocalizeStrings.Get(19110); // difficult
           break;
       }
       GUIControl.SetControlLabel(GetID, btnLevel.GetID, textLine);
@@ -1164,21 +1165,28 @@ namespace MediaPortal.GUI.NumberPlace
     {
       base.Render(timePassed);
       // Do not render if not visible.
-      if (GUIGraphicsContext.EditMode == false)
-      {
-        if (!IsVisible)
-        {
-          return;
-        }
-      }
+      //if (GUIGraphicsContext.EditMode == false)
+      //{
+      //  if (!IsVisible)
+      //  {
+      //    return;
+      //  }
+      //}
 
-      if (!String.IsNullOrEmpty(strHours))
+      if (gameRunning)
       {
-        GUIPropertyManager.SetProperty("#numberplace.time", strHours + ":" + strMinutes + ":" + strSeconds);
+        if (!String.IsNullOrEmpty(strHours))
+        {
+          GUIPropertyManager.SetProperty("#numberplace.time", strHours + ":" + strMinutes + ":" + strSeconds);
+        }
+        else
+        {
+          GUIPropertyManager.SetProperty("#numberplace.time", strMinutes + ":" + strSeconds);
+        }
       }
       else
       {
-        GUIPropertyManager.SetProperty("#numberplace.time", strMinutes + ":" + strSeconds);
+        GUIPropertyManager.SetProperty("#numberplace.time", "--:--");
       }
       //GUIPropertyManager.SetProperty("#selecteditem", strMinutes + ":" + strSeconds);
 
