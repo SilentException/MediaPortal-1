@@ -1328,6 +1328,8 @@ namespace MediaPortal.GUI.Video
 
     protected override void SelectCurrentItem()
     {
+      if (_currentSelectedItem < 0) _currentSelectedItem = 0;
+
       if (_currentSelectedItem >= 0)
       {
         GUIControl.SelectItemControl(GetID, facadeLayout.GetID, _currentSelectedItem);

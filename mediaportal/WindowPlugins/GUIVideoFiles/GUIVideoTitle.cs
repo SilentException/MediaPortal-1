@@ -653,6 +653,10 @@ namespace MediaPortal.GUI.Video
       {
         GUIControl.SelectItemControl(GetID, facadeLayout.GetID, currentSelectedItem);
       }
+      else
+      {
+        SelectCurrentItem();
+      }
 
       GUIWaitCursor.Hide();
 
