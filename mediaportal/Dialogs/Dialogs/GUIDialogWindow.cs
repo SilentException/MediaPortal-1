@@ -78,7 +78,8 @@ namespace MediaPortal.Dialogs
       GUIWindowManager.IsSwitchingToNewWindow = false;
 
       while (IsAnimating(AnimationType.WindowOpen) &&
-             GUIGraphicsContext.CurrentState == GUIGraphicsContext.State.RUNNING)
+             GUIGraphicsContext.CurrentState == GUIGraphicsContext.State.RUNNING &&
+             _running)
       {
         GUIWindowManager.Process();
       }
