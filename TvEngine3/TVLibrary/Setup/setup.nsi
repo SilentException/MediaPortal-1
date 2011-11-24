@@ -377,10 +377,10 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   #---------------------------- File Copy ----------------------
   ; Tuning Parameter Directory
   SetOutPath "${COMMON_APPDATA}\TuningParameters"
-  File /r /x .git "${TVSERVER.BASE}\TuningParameters\*"
+  File /r /x .git "${TVSERVER.BASE}\TuningParametersMS\*"
   ; WebEPG Grabbers Directory
   SetOutPath "${COMMON_APPDATA}\WebEPG"
-  File /r /x .git "${TVSERVER.BASE}\WebEPG\*"
+  File /r /x .git "${TVSERVER.BASE}\WebEPGMS\*"
   ; XMLTV Data Directory
   SetOutPath "${COMMON_APPDATA}\xmltv"
   File /r /x .git "${TVSERVER.BASE}\xmltv\*"
