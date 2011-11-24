@@ -750,6 +750,8 @@ namespace MediaPortal.GUI.Library
       {
         GUIPropertyManager.SetProperty("#highlightedbutton", string.Empty);
       }
+
+      base.Render(timePassed);
     }
 
     protected override void RenderButton(float timePassed, int buttonNr, int x, int y, bool gotFocus)
