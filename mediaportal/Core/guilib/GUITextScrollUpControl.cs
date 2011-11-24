@@ -81,6 +81,15 @@ namespace MediaPortal.GUI.Library
 
     #endregion
 
+    /// <summary>
+    /// Returns if the control can have the focus.
+    /// </summary>
+    /// <returns>False</returns>
+    public override bool CanFocus()
+    {
+      return false;
+    }
+
     public override void FinalizeConstruction()
     {
       base.FinalizeConstruction();
