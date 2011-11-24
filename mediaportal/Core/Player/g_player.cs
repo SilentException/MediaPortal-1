@@ -3058,12 +3058,12 @@ namespace MediaPortal.Player
 
     public static bool ShowFullScreenWindowVideoDefault()
     {
-      if (!HasVideo && !IsMusic)
+      if (!HasVideo && !IsMusic && !IsRadio) // SE
       {
         return false;
       }
       // are we playing music and got the fancy BassMusicPlayer?
-      if (IsMusic && BassMusicPlayer.IsDefaultMusicPlayer)
+      if ((IsMusic || IsRadio) && BassMusicPlayer.IsDefaultMusicPlayer) // SE
       {
         if (GUIWindowManager.ActiveWindow == (int)GUIWindow.Window.WINDOW_FULLSCREEN_MUSIC)
         {
