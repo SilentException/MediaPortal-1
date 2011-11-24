@@ -616,24 +616,33 @@ namespace TvPlugin
     protected void Redraw()
     {
       Bitmap bitmap;
-      if (_redrawForeground)
+
+      try
       {
-        imgTeletextForeground.IsVisible = false;
-        if (!imgTeletextForeground.LockMemoryImageTexture(out bitmap))
-          return;
-        _renderer.RenderPage(ref bitmap, receivedPage, receivedPageNumber, receivedSubPageNumber, _waiting);
-        imgTeletextForeground.UnLockMemoryImageTexture();
-        imgTeletextForeground.IsVisible = true;
+        if (_redrawForeground)
+        {
+          imgTeletextForeground.IsVisible = false;
+          if (!imgTeletextForeground.LockMemoryImageTexture(out bitmap))
+            return;
+          _renderer.RenderPage(ref bitmap, receivedPage, receivedPageNumber, receivedSubPageNumber, _waiting);
+          imgTeletextForeground.UnLockMemoryImageTexture();
+          imgTeletextForeground.IsVisible = true;
+        }
+        else
+        {
+          imgTeletextBackground.IsVisible = false;
+          if (!imgTeletextBackground.LockMemoryImageTexture(out bitmap))
+            return;
+          _renderer.RenderPage(ref bitmap, receivedPage, receivedPageNumber, receivedSubPageNumber, _waiting);
+          imgTeletextBackground.UnLockMemoryImageTexture();
+          imgTeletextBackground.IsVisible = true;
+        }
       }
-      else
+      catch (Exception ex)
       {
-        imgTeletextBackground.IsVisible = false;
-        if (!imgTeletextBackground.LockMemoryImageTexture(out bitmap))
-          return;
-        _renderer.RenderPage(ref bitmap, receivedPage, receivedPageNumber, receivedSubPageNumber, _waiting);
-        imgTeletextBackground.UnLockMemoryImageTexture();
-        imgTeletextBackground.IsVisible = true;
+        Log.Error(ex.ToString());
       }
+
       _redrawForeground = !_redrawForeground;
     }
 
