@@ -305,23 +305,23 @@ struct pshdr
 	{
 		BYTE profile, level;
 		unsigned int width, height;
-    bool progressive;
-		__int64 spspos, spslen;
-		__int64 ppspos, ppslen;
+		bool progressive;
+		BYTE * sps;
+		BYTE * pps;
+		__int64 spslen;
+		__int64 ppslen;
 		__int64 AvgTimePerFrame;
 		int arx, ary;
 		BYTE ar;
 		avchdr()
 		{
-      progressive = true;
-			spspos = 0;
+			progressive = true;
 			spslen = 0;
-			ppspos = 0;
 			ppslen = 0;
 			AvgTimePerFrame = 0;
-      ar = 0;
-      arx = 0;
-      ary = 0;
+			ar = 0;
+			arx = 0;
+			ary = 0;
 		}
 	};
 

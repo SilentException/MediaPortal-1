@@ -196,6 +196,12 @@ HRESULT CSubtitlePin::FillBuffer(IMediaSample *pSample)
   {
     CDeMultiplexer& demux=m_pTsReaderFilter->GetDemultiplexer();
     CBuffer* buffer=NULL;
+
+//    if (!demux.m_bAudioVideoReady)
+//    {
+//      LogDebug("Subtitle FillBuffer, not m_bAudioVideoReady ");
+//    }
+
     do
     {
       //get file-duration and set m_rtDuration
@@ -217,13 +223,16 @@ HRESULT CSubtitlePin::FillBuffer(IMediaSample *pSample)
         return NOERROR;
       }
 
-      if (m_pTsReaderFilter->m_bStreamCompensated)
+      if (m_pTsReaderFilter->m_bStreamCompensated && !demux.m_bFlushRunning)
       {
         //get next buffer from demultiplexer
-        {
-          CAutoLock lock(&m_bufferLock);
-          buffer=demux.GetSubtitle();
-        }
+        CAutoLock flock (&demux.m_sectionFlushSubtitle);
+        CAutoLock lock(&m_bufferLock);
+        buffer=demux.GetSubtitle();
+      }
+      else
+      {
+        buffer=NULL;
       }
 
       //did we reach the end of the file
@@ -241,7 +250,7 @@ HRESULT CSubtitlePin::FillBuffer(IMediaSample *pSample)
       if (buffer == NULL)
       {
         m_bInFillBuffer = false;
-        Sleep(20);
+        Sleep(10);
       }
       else
       {
@@ -389,7 +398,7 @@ void CSubtitlePin::UpdateFromSeek()
   //directly after eachother
   //for a single seek operation. To 'fix' this we only perform the seeking operation
   //if we didnt do a seek in the last 5 seconds...
-  if (GetTickCount()-m_seekTimer<5000)
+  if (timeGetTime()-m_seekTimer<5000)
   {
     if (m_lastSeek==m_rtStart)
     {
@@ -401,7 +410,7 @@ void CSubtitlePin::UpdateFromSeek()
   //Note that the seek timestamp (m_rtStart) is done in the range
   //from earliest - latest from GetAvailable()
   //We however would like the seek timestamp to be in the range 0-fileduration
-  m_seekTimer=GetTickCount();
+  m_seekTimer=timeGetTime();
   m_lastSeek=m_rtStart;
 
   CRefTime rtSeek=m_rtStart;

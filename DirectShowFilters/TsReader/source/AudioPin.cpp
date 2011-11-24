@@ -188,7 +188,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
   {
     CDeMultiplexer& demux=m_pTsReaderFilter->GetDemultiplexer();
     CBuffer* buffer=NULL;
-
+    
     do
     {
       //get file-duration and set m_rtDuration
@@ -197,7 +197,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
       //if the filter is currently seeking to a new position
       //or this pin is currently seeking to a new position then
       //we dont try to read any packets, but simply return...
-      if (m_pTsReaderFilter->IsSeeking() || m_pTsReaderFilter->IsStopping())// /*|| m_bSeeking*/ || m_pTsReaderFilter->IsSeekingToEof())
+      if (m_pTsReaderFilter->IsSeeking() || m_pTsReaderFilter->IsStopping())
       {
         //if (m_pTsReaderFilter->m_ShowBufferAudio) LogDebug("aud:isseeking");
         Sleep(20);
@@ -208,10 +208,18 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
         return NOERROR;
       }
 
-      buffer=demux.GetAudio();
+      if (!demux.m_bFlushRunning)
+      {
+        CAutoLock flock (&demux.m_sectionFlushAudio);
+        buffer=demux.GetAudio();
+      }
+      else
+      {
+        buffer=NULL;
+      }
 
       //did we reach the end of the file
-      if (demux.EndOfFile()) // || ((GetTickCount()-m_LastTickCount > 3000) && !m_pTsReaderFilter->IsTimeShifting()))
+      if (demux.EndOfFile()) // || ((timeGetTime()-m_LastTickCount > 3000) && !m_pTsReaderFilter->IsTimeShifting()))
       {
         LogDebug("aud:set eof");
         pSample->SetTime(NULL,NULL);
@@ -221,18 +229,29 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
         return S_FALSE; //S_FALSE will notify the graph that end of file has been reached
       }
 
-      if (buffer==NULL)
+      //Wait until we have audio (and video, if pin connected) 
+      if (!demux.m_bAudioVideoReady || (buffer==NULL))
       {
         Sleep(10);
+        buffer=NULL; //Continue looping
+        if (!demux.m_bAudioVideoReady && (m_nNextASD != 0))
+        {
+          ClearAverageSampleDur();
+        }
       }
       else
       {
+        m_bPresentSample = true ;
+        m_sampleSleepTime = 1;
+        
         int cntA,cntV ;
+        DWORD  audSampleCount;
         CRefTime firstAudio, lastAudio;
         CRefTime firstVideo, lastVideo;
-        cntA = demux.GetAudioBufferPts(firstAudio, lastAudio) + 1; // this one...
+        cntA = demux.GetAudioBufferPts(firstAudio, lastAudio, audSampleCount); // this one...
         cntV = demux.GetVideoBufferPts(firstVideo, lastVideo);
         #define PRESENT_DELAY 0000000
+        
         // Ambass : Coming here means we've a minimum of audio(>=1)/video buffers waiting...
         if (!m_pTsReaderFilter->m_bStreamCompensated)
         {
@@ -241,25 +260,17 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           CRefTime AddVideoCompensation ;
           LogDebug("Audio Samples : %d, First : %03.3f, Last : %03.3f",cntA, (float)firstAudio.Millisecs()/1000.0f,(float)lastAudio.Millisecs()/1000.0f);
           LogDebug("Video Samples : %d, First : %03.3f, Last : %03.3f",cntV, (float)firstVideo.Millisecs()/1000.0f,(float)lastVideo.Millisecs()/1000.0f);
+                    
           if (m_pTsReaderFilter->GetVideoPin()->IsConnected())
           {
-/*
-            if( !m_EnableSlowMotionOnZapping &&
-               ( lastAudio.Millisecs() < demux.m_IframeSample.Millisecs() ) &&
-               demux.GetVideoServiceType() != SERVICE_TYPE_VIDEO_UNKNOWN )
-            {
-              // Drop audio sample, do not allow slow motion video on channel changes
-              delete buffer;
-              buffer=NULL ;
-              return NOERROR;
-            }
-*/            
             if (firstAudio.Millisecs() < firstVideo.Millisecs())
             {
-              if (lastAudio.Millisecs() - 200 < firstVideo.Millisecs())
+              if (lastAudio.Millisecs() - 300 < firstVideo.Millisecs()) //Less than 300ms A/V overlap
               {
-                BestCompensation  = lastAudio - 2000000 - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
-                AddVideoCompensation = ( firstVideo - lastAudio + 2000000 ) ;
+                BestCompensation  = lastAudio - 3000000 - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
+                AddVideoCompensation = ( firstVideo - lastAudio + 3000000 ) ;
+//                BestCompensation  = lastAudio - 2000000 - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
+//                AddVideoCompensation = ( firstVideo - lastAudio + 2000000 ) ;
                 LogDebug("Compensation : ( Rnd : %d mS ) Audio pts greatly ahead Video pts . Add %03.3f sec of extra video comp to start now !...( real time TV )",(DWORD)m_pTsReaderFilter->m_RandomCompensation/10000,(float)AddVideoCompensation.Millisecs()/1000.0f) ;
               }
               else
@@ -271,24 +282,10 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
             }
             else
             {
-//              if (lastVideo.Millisecs() < firstAudio.Millisecs())
-//              {
-//                BestCompensation = lastVideo-m_rtStart ;
-//                AddVideoCompensation = 0 ;
-//                LogDebug("Compensation : Suspicious case, Audio pts greatly behind Videop pts ...") ;
-//              }
-//              else
-//              {
               BestCompensation = firstAudio-m_rtStart ;
               AddVideoCompensation = 0 ;
               LogDebug("Compensation : Audio pts behind Video Pts ( Recover skipping Video ) ....") ;
-//              }
             }
-//						if (lastVideo.Millisecs()==firstVideo.Millisecs())		// temporary hack for channels containing full GOP into single PES.
-//						{
-//							BestCompensation -= (REFERENCE_TIME)5000000 ;
-//							AddVideoCompensation += (REFERENCE_TIME)5000000 ;
-//						}
             m_pTsReaderFilter->m_RandomCompensation += 500000 ;   // Stupid feature required to have FFRW working with DVXA ( at least ATI.. ) to avoid frozen picture. ( it moves just moves the sample time a bit !! )
             m_pTsReaderFilter->m_RandomCompensation = m_pTsReaderFilter->m_RandomCompensation % 1000000 ;
           }
@@ -310,7 +307,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
             m_pTsReaderFilter->m_ClockOnStart = RefClock - m_rtStart.m_time ;
             if (m_pTsReaderFilter->m_bLiveTv)
             {
-              LogDebug("Elapsed time from pause to Audio/Video ( total zapping time ) : %d mS",GetTickCount()-m_pTsReaderFilter->m_lastPause);
+              LogDebug("Elapsed time from pause to Audio/Video ( total zapping time ) : %d mS",timeGetTime()-m_pTsReaderFilter->m_lastPause);
             }
           }
           else
@@ -319,7 +316,9 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           }
 
           // set the current compensation
-          m_pTsReaderFilter->Compensation.m_time=(BestCompensation.m_time - m_pTsReaderFilter->m_ClockOnStart.m_time) - PRESENT_DELAY ;
+          CRefTime compTemp;
+          compTemp.m_time=(BestCompensation.m_time - m_pTsReaderFilter->m_ClockOnStart.m_time) - PRESENT_DELAY ;
+          m_pTsReaderFilter->SetCompensation(compTemp);
           m_pTsReaderFilter->AddVideoComp=AddVideoCompensation ;
 
           LogDebug("aud:Compensation:%03.3f, Clock on start %03.3f m_rtStart:%d ",(float)m_pTsReaderFilter->Compensation.Millisecs()/1000.0f, m_pTsReaderFilter->m_ClockOnStart.Millisecs()/1000.0f, m_rtStart.Millisecs());
@@ -329,6 +328,18 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           m_bSubtitleCompensationSet = false;
         }
 
+        //Calculate sleep times (average sample duration/4)
+        if (m_dRateSeeking == 1.0)
+        {
+          m_sampleDuration = GetAverageSampleDur(lastAudio.GetUnits());
+          m_sampleSleepTime = min(20, max(1, m_sampleDuration/40000));
+        }
+        else
+        {
+          m_sampleDuration = GetAverageSampleDur(lastAudio.GetUnits());
+          m_sampleSleepTime = 1;
+        }
+
         // Subtitle filter is "found" only after Run() has been completed
         if(!m_bSubtitleCompensationSet)
         {
@@ -336,30 +347,46 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           if(pDVBSubtitleFilter)
           {
             LogDebug("aud:pDVBSubtitleFilter->SetTimeCompensation");
-            pDVBSubtitleFilter->SetTimeCompensation(m_pTsReaderFilter->Compensation);
+            pDVBSubtitleFilter->SetTimeCompensation(m_pTsReaderFilter->GetCompensation());
             m_bSubtitleCompensationSet=true;
           }
         }
 
         CRefTime RefTime,cRefTime ;
         bool HasTimestamp ;
+        double fTime = 0.0;
+        double clock = 0.0;
         //check if it has a timestamp
         if ((HasTimestamp=buffer->MediaTime(RefTime)))
         {
           cRefTime = RefTime ;
 					cRefTime -= m_rtStart ;
           //adjust the timestamp with the compensation
-          cRefTime-= m_pTsReaderFilter->Compensation ;
+          cRefTime-= m_pTsReaderFilter->GetCompensation() ;
 
-          if (cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) // m_rtStart.m_time+m_pTsReaderFilter->Compensation.m_time) // + PRESENT_DELAY)
+          REFERENCE_TIME RefClock = 0;
+          m_pTsReaderFilter->GetMediaPosition(&RefClock) ;
+          clock = (double)(RefClock-m_rtStart.m_time)/10000000.0 ;
+          fTime = (double)cRefTime.Millisecs()/1000.0f - clock ;
+
+          //Discard late samples at start of play,
+          //and samples outside a sensible timing window during play 
+          //(helps with signal corruption recovery)
+          if ((cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) && (fTime > -0.2) && (fTime < 2.0))
           {
-            m_bPresentSample = true ;
-            Sleep(5) ;
+            if (fTime > 0.7)
+            {
+              //Too early - stall for a while to avoid over-filling of audio renderer buffers
+              Sleep(10);
+              buffer = NULL;
+              continue;
+            }
           }
-          else
+          else //Don't drop samples normally - it upsets the rate matching in the audio renderer
           {
             // Sample is too late.
             m_bPresentSample = false ;
+            m_bDiscontinuity = TRUE; //Next good sample will be discontinuous
           }
         }
 
@@ -378,21 +405,16 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           {
             //now we have the final timestamp, set timestamp in sample
             REFERENCE_TIME refTime=(REFERENCE_TIME)cRefTime;
-            refTime /= m_dRateSeeking;
+            refTime = (REFERENCE_TIME)((double)refTime/m_dRateSeeking);
 
             pSample->SetSyncPoint(TRUE);
 
             pSample->SetTime(&refTime,&refTime);
             if (m_dRateSeeking == 1.0)
             {
-              REFERENCE_TIME RefClock = 0;
-              m_pTsReaderFilter->GetMediaPosition(&RefClock) ;
-              float clock = (double)(RefClock-m_rtStart.m_time)/10000000.0 ;
-              float fTime=(float)cRefTime.Millisecs()/1000.0f - clock ;
-
               if (m_pTsReaderFilter->m_ShowBufferAudio || fTime < 0.030)
               {
-                LogDebug("Aud/Ref : %03.3f, Late              Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State());
+                LogDebug("Aud/Ref : %03.3f, Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, Sleep %d ms", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State(), m_sampleSleepTime);
               }
               if (m_pTsReaderFilter->m_ShowBufferAudio) m_pTsReaderFilter->m_ShowBufferAudio--;
             }
@@ -411,11 +433,15 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           memcpy(pSampleBuffer,buffer->Data(),buffer->Length());
           //delete the buffer and return
           delete buffer;
+          demux.EraseAudioBuff();
+          Sleep(m_sampleSleepTime) ; //Sleep for a time derived from data rate
         }
         else
         { // Buffer was not displayed because it was out of date, search for next.
           delete buffer;
+          demux.EraseAudioBuff();
           buffer=NULL ;
+          Sleep(1) ;
         }
       }
     } while (buffer==NULL);
@@ -433,6 +459,62 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
   }
   return NOERROR;
 }
+
+void CAudioPin::ClearAverageSampleDur()
+{
+  m_sampleSleepTime = 1;
+  m_sampleDuration = 10000; //1 ms
+
+  m_llLastComp = 0;
+  m_llLastASDts = 0;
+  m_nNextASD = 0;
+	m_fASDMean = 0;
+	m_llASDSumAvg = 0;
+  ZeroMemory((void*)&m_pllASD, sizeof(LONGLONG) * NB_ASDSIZE);
+}
+
+// Calculate rolling average audio sample duration
+LONGLONG CAudioPin::GetAverageSampleDur(LONGLONG timeStamp)
+{
+  LONGLONG stsDiff;
+  if (m_nNextASD > 0)
+  {
+    stsDiff = timeStamp - m_llLastASDts;
+  }
+  else
+  {
+    stsDiff = 10000;
+  }
+  
+  m_llLastASDts = timeStamp;
+        
+    // Calculate the mean timestamp difference
+  if (m_nNextASD >= NB_ASDSIZE)
+  {
+    m_fASDMean = m_llASDSumAvg / (LONGLONG)NB_ASDSIZE;
+  }
+  else if (m_nNextASD > 1)
+  {
+    m_fASDMean = m_llASDSumAvg / (LONGLONG)m_nNextASD;
+  }
+  else
+  {
+    m_fASDMean = stsDiff;
+  }
+
+    // Update the rolling timestamp difference sum
+    // (these values are initialised in OnThreadStartPlay())
+  int tempNextASD = (m_nNextASD % NB_ASDSIZE);
+  m_llASDSumAvg -= m_pllASD[tempNextASD];
+  m_pllASD[tempNextASD] = stsDiff;
+  m_llASDSumAvg += stsDiff;
+  m_nNextASD++;
+  
+  //LogDebug("aud:GetAverageSampleTime, nextASD %d, TsMeanDiff %0.3f, stsDiff %0.3f", m_nNextASD, (float)m_fASDMean/10000.0f, (float)stsDiff/10000.0f);
+  
+  return m_fASDMean;
+}
+
 
 bool CAudioPin::IsConnected()
 {
@@ -476,11 +558,16 @@ HRESULT CAudioPin::OnThreadStartPlay()
   m_pTsReaderFilter->m_bStreamCompensated = false;
   m_pTsReaderFilter->GetDemultiplexer().m_bAudioVideoReady=false ;
 
+  m_pTsReaderFilter->m_bForcePosnUpdate = true;
+  m_pTsReaderFilter->WakeThread();
+
   //set discontinuity flag indicating to codec that the new data
   //is not belonging to any previous data
   m_bDiscontinuity = TRUE;
   m_bPresentSample = false;
-
+  
+  ClearAverageSampleDur();
+  
   LogDebug("aud:OnThreadStartPlay(%f) %02.2f", (float)m_rtStart.Millisecs()/1000.0f, m_dRateSeeking);
 
   //start playing

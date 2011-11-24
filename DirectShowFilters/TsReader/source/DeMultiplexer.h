@@ -65,10 +65,12 @@ public:
   virtual ~CDeMultiplexer(void);
 
   void       Start();
-  void       Flush();
+  void       Flush(bool clearAVready);
   CBuffer*   GetVideo();
   CBuffer*   GetAudio();
   CBuffer*   GetSubtitle();
+  void       EraseAudioBuff();
+  void       EraseVideoBuff();
   void       OnTsPacket(byte* tsPacket);
   void       OnNewChannel(CChannelInfo& info);
   void       SetFileReader(FileReader* reader);
@@ -82,7 +84,7 @@ public:
   void       SetEndOfFile(bool bEndOfFile);
   CPidTable  GetPidTable();
 
-  int        GetAudioBufferPts(CRefTime& First, CRefTime& Last) ;
+  int        GetAudioBufferPts(CRefTime& First, CRefTime& Last, DWORD& SampleCount) ;
   int        GetVideoBufferPts(CRefTime& First, CRefTime& Last) ;
 
   bool       SetAudioStream(__int32 stream);
@@ -130,9 +132,23 @@ public:
   void SetAudioChanging(bool onOff);
   bool IsAudioChanging(void);
 
+  int ReadAheadFromFile();
+
   bool m_DisableDiscontinuitiesFiltering;
   DWORD m_LastDataFromRtsp;
   bool m_bAudioVideoReady;
+  bool m_bFlushDelegated;
+  bool m_bFlushDelgNow;
+  bool m_bFlushRunning;
+  bool m_bReadAheadFromFile;
+
+  //  long m_AudioDataLowCount;
+  //  long m_VideoDataLowCount;
+  long m_AVDataLowCount;
+
+  CCritSec m_sectionFlushAudio;
+  CCritSec m_sectionFlushVideo;
+  CCritSec m_sectionFlushSubtitle;
 
 private:
   struct stAudioStream
@@ -179,6 +195,7 @@ private:
   CRefTime  m_LastAudioSample;
   CRefTime  m_FirstVideoSample;
   CRefTime  m_LastVideoSample;
+  DWORD     m_AudioSampleCount;
 
   CBuffer* m_pCurrentTeletextBuffer;
   CBuffer* m_pCurrentSubtitleBuffer;
@@ -205,7 +222,7 @@ private:
   int m_iAudioIdx;
   int m_iPatVersion;
   int m_ReqPatVersion;
-  int m_WaitNewPatTmo;
+  DWORD m_WaitNewPatTmo;
   int m_receivedPackets;
 
   bool m_bFirstGopFound;
@@ -219,6 +236,8 @@ private:
   bool m_bStarting;
 
   bool m_mpegParserTriggerFormatChange;
+  bool m_videoChanged;
+  bool m_audioChanged;
   bool m_bSetAudioDiscontinuity;
   bool m_bSetVideoDiscontinuity;
   CPcr m_subtitlePcr;

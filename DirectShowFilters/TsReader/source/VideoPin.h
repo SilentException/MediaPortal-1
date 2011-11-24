@@ -80,6 +80,8 @@ protected:
 	REFERENCE_TIME  m_fMTDMean;
 	REFERENCE_TIME  m_llMTDSumAvg;	
 
+  REFERENCE_TIME  m_llLastComp;
+
 };
 
 #endif

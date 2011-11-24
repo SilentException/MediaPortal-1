@@ -76,7 +76,6 @@ bool CMpegPesParser::ParseVideo(byte* tsPacket,bool isMpeg2)
 	}
 	else 
 	{
-		avchdr avc;
 		if (hdrParser.Read(avc,framesize,&pmt))
 		{
 			//hdrParser.DumpAvcHeader(avc);
