@@ -341,7 +341,7 @@ namespace TvLibrary.Implementations.Analog.Components
       for (int i = 0; i < devices.Length; i++)
       {
         bool filterUsed = false;
-        IBaseFilter tmp;
+        IBaseFilter tmp = null;
         if (_badCaptureDevices.Contains(devices[i].Name))
         {
           Log.Log.WriteFile("analog: AddTvCaptureFilter bypassing: {0}", devices[i].Name);
@@ -366,6 +366,11 @@ namespace TvLibrary.Implementations.Analog.Components
         catch (Exception)
         {
           Log.Log.WriteFile("analog: cannot add filter to graph");
+          if (tmp != null)
+          {
+            graphBuilder.RemoveFilter(tmp);
+            Release.ComObject("TvCaptureFilter", tmp);
+          }
           continue;
         }
         if (hr != 0)
@@ -449,7 +454,7 @@ namespace TvLibrary.Implementations.Analog.Components
         CheckCapabilitiesStreamConfig(graph, capBuilder);
         SetCaptureConfiguration(graph);
       }
-      return _filterVideoCapture != null;
+      return (_filterVideoCapture != null && _filterAudioCapture != null);
     }
 
     /// <summary>
@@ -496,7 +501,7 @@ namespace TvLibrary.Implementations.Analog.Components
       for (int i = 0; i < devices.Length; i++)
       {
         bool filterUsed = false;
-        IBaseFilter tmp;
+        IBaseFilter tmp = null;
         if (_badCaptureDevices.Contains(devices[i].Name))
         {
           Log.Log.WriteFile("analog: AddTvCaptureFilter bypassing: {0}", devices[i].Name);
@@ -515,6 +520,11 @@ namespace TvLibrary.Implementations.Analog.Components
         catch (Exception)
         {
           Log.Log.WriteFile("analog: cannot add filter to graph");
+          if (tmp != null)
+          {
+            graphBuilder.RemoveFilter(tmp);
+            Release.ComObject("TvCaptureFilter", tmp);
+          }
           continue;
         }
         if (hr != 0)
@@ -589,7 +599,7 @@ namespace TvLibrary.Implementations.Analog.Components
         FindVBIPin(graph);
         CheckCapabilities(graph, capBuilder);
       }
-      return _filterVideoCapture != null;
+      return (_filterVideoCapture != null && _filterAudioCapture != null);
     }
 
     /// <summary>

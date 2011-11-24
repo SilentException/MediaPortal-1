@@ -316,7 +316,7 @@ namespace TvLibrary.Implementations.Analog
         FreeSubChannel(subChannel.SubChannelId);
         throw;
       }
-      _encoder.UpdatePinVideo(channel.IsTv, _graphBuilder);
+      //_encoder.UpdatePinVideo(channel.IsTv, _graphBuilder);
       return subChannel;
     }
 

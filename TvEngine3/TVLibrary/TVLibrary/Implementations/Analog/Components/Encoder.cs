@@ -1492,7 +1492,7 @@ namespace TvLibrary.Implementations.Analog.Components
       {
         Log.Log.WriteFile("analog:   find pins on capture filter");
         if (_pinAnalogAudio == null)
-          _pinAnalogAudio = FindMediaPin(_capture.VideoFilter, MediaType.Audio, MediaSubType.Null);
+          _pinAnalogAudio = FindMediaPin(_capture.AudioFilter, MediaType.Audio, MediaSubType.Null);
         if (_pinAnalogVideo == null)
           _pinAnalogVideo = FindMediaPin(_capture.VideoFilter, MediaType.Video, MediaSubType.Null);
       }
