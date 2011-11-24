@@ -179,7 +179,7 @@ namespace MediaPortal.GUI.Library
     private int _packedTextureNo = -1;
     private int _packedDiffuseTextureNo = -1;
     private int _packedMaskTextureNo = -1;
-    private static bool logtextures = false;
+    private static bool logtextures = true;
     private bool _isFullScreenImage = false;
     private bool _reCalculate = false;
     private bool _allocated = false;
