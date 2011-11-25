@@ -640,8 +640,12 @@ void CDVBSubDecoder::Compose_subtitle()
   }
   m_CurrentSubtitle->RenderBitmap( m_Buffer, colours, trans, 256 );
   
-  m_RenderedSubtitles.resize( m_RenderedSubtitles.size() + 1 );
-  m_RenderedSubtitles[m_RenderedSubtitles.size() - 1] = m_CurrentSubtitle;
+  if (m_RenderedSubtitles.size() < 4) //Stop excessive buffering/memory usage
+  {
+    m_RenderedSubtitles.resize( m_RenderedSubtitles.size() + 1 );
+    m_RenderedSubtitles[m_RenderedSubtitles.size() - 1] = m_CurrentSubtitle;
+  }
+  
   m_CurrentSubtitle = NULL; // ownership is transfered
 
   LogDebug("New subtitle ready - subtitle cache count = %d", m_RenderedSubtitles.size() );
