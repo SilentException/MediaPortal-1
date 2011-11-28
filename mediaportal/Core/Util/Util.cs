@@ -638,7 +638,7 @@ namespace MediaPortal.Util
 
       if (!item.IsFolder || (item.IsFolder && VirtualDirectory.IsImageFile(Path.GetExtension(item.Path).ToLower())))
       {
-        if (IsPicture(item.Path))
+        if (!IsVideo(item.Path))
         {
           Log.Debug("SetThumbnails: nothing to do.");
           return;
@@ -1469,6 +1469,8 @@ namespace MediaPortal.Util
         // Set to hidden to avoid losing focus.
         procInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
         procInfo.CreateNoWindow = true;
+        procInfo.FileName = strProgram;
+        procInfo.UseShellExecute = false;
       }
       return StartProcess(procInfo, bWaitForExit);
     }
