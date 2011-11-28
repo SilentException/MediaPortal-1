@@ -100,7 +100,7 @@ void CProgramToTransportStream::Write(byte* data, int len)
 			return;
 		}
 		m_buffer.PutBuffer(data, len, 1);
-		if (m_bStarting && m_buffer.Size()>300000)
+		if (m_bStarting && m_buffer.Size()>30000)
 		{
 			m_bStarting=false;
 			m_BufferThreadActive = true;
@@ -113,7 +113,7 @@ void CProgramToTransportStream::Write(byte* data, int len)
 				LogDebug("CProgramToTransportStream::Failed to start output sink");
 			}
 		}
-		while (m_buffer.Size()>300000)
+		while (m_buffer.Size()>30000)
 		{
 			if(m_bSendVideoAudioObserverEvents && m_pCallback != NULL){
 				m_bSendVideoAudioObserverEvents = false;

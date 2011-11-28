@@ -23,7 +23,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <string.h>
 #include <stdlib.h>
 
-#define BANK_SIZE 150000
+#define BANK_SIZE 15000
 
 StreamParser::StreamParser(FramedSource* inputSource,
 			   FramedSource::onCloseFunc* onInputCloseFunc,
