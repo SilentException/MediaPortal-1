@@ -265,17 +265,15 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           {
             if (firstAudio.Millisecs() < firstVideo.Millisecs())
             {
-              if (lastAudio.Millisecs() - 300 < firstVideo.Millisecs()) //Less than 300ms A/V overlap
+              if (lastAudio.Millisecs() - 500 < firstVideo.Millisecs()) //Less than 500ms A/V overlap
               {
-                BestCompensation  = lastAudio - 3000000 - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
-                AddVideoCompensation = ( firstVideo - lastAudio + 3000000 ) ;
-//                BestCompensation  = lastAudio - 2000000 - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
-//                AddVideoCompensation = ( firstVideo - lastAudio + 2000000 ) ;
+                BestCompensation = lastAudio - (500*10000) - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ;
+                AddVideoCompensation = ( firstVideo - lastAudio + (500*10000) ) ;
                 LogDebug("Compensation : ( Rnd : %d mS ) Audio pts greatly ahead Video pts . Add %03.3f sec of extra video comp to start now !...( real time TV )",(DWORD)m_pTsReaderFilter->m_RandomCompensation/10000,(float)AddVideoCompensation.Millisecs()/1000.0f) ;
               }
               else
               {
-                BestCompensation  = firstVideo - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ; //demux.m_IframeSample /*firstVideo*/ -m_rtStart ;
+                BestCompensation = firstVideo - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ;
                 AddVideoCompensation = 0 ; // ( demux.m_IframeSample-firstAudio ) ;
                 LogDebug("Compensation : ( Rnd : %d mS ) Audio pts ahead Video Pts ( Recover skipping Audio ) ....",m_pTsReaderFilter->m_RandomCompensation/10000) ;
               }
@@ -332,7 +330,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
         if (m_dRateSeeking == 1.0)
         {
           m_sampleDuration = GetAverageSampleDur(lastAudio.GetUnits());
-          m_sampleSleepTime = min(20, max(1, m_sampleDuration/40000));
+          m_sampleSleepTime = (DWORD)min(20, max(1, m_sampleDuration/40000));
         }
         else
         {
@@ -374,9 +372,9 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           //(helps with signal corruption recovery)
           if ((cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) && (fTime > -0.2) && (fTime < 2.0))
           {
-            if (fTime > 0.7)
+            if (fTime > 0.5)
             {
-              //Too early - stall for a while to avoid over-filling of audio renderer buffers
+              //Too early - stall to avoid over-filling of audio decode/renderer buffers
               Sleep(10);
               buffer = NULL;
               continue;

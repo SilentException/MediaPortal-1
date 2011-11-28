@@ -627,8 +627,8 @@ CBuffer* CDeMultiplexer::GetAudio()
   // then try to read some from the current file
   if (!m_bAudioVideoReady && (m_vecAudioBuffers.size()>0))
   {
-    // Goal is to start with at least 200mS audio and 200mS video ahead. ( LiveTv and RTSP as TsReader cannot go ahead by itself)
-    if (m_LastAudioSample.Millisecs() - m_FirstAudioSample.Millisecs() < 310) return NULL ;       // Not enough audio to start.
+    // Goal is to start with at least 500mS audio and 300mS video ahead. ( LiveTv and RTSP as TsReader cannot go ahead by itself)
+    if (m_LastAudioSample.Millisecs() - m_FirstAudioSample.Millisecs() < 510) return NULL ;       // Not enough audio to start.
 
     if (m_filter.GetVideoPin()->IsConnected())
     {
