@@ -431,6 +431,16 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   File "${TVSERVER.BASE}\tevii.dll"
   File "${TVSERVER.BASE}\Ionic.Zip.dll"
 
+  ; support files for MPIPTVSource.ax
+  File "${git_DirectShowFilters}\MPIPTV_FILE\bin\${BUILD_TYPE}\MPIPTV_FILE.dll"
+  File "${git_DirectShowFilters}\MPIPTV_HTTP\bin\${BUILD_TYPE}\MPIPTV_HTTP.dll"
+  File "${git_DirectShowFilters}\MPIPTV_KARTINA\bin\${BUILD_TYPE}\MPIPTV_KARTINA.dll"
+  File "${git_DirectShowFilters}\MPIPTV_RTP\bin\${BUILD_TYPE}\MPIPTV_RTP.dll"
+  File "${git_DirectShowFilters}\MPIPTV_RTSP\bin\${BUILD_TYPE}\MPIPTV_RTSP.dll"
+  File "${git_DirectShowFilters}\MPIPTV_UDP\bin\${BUILD_TYPE}\MPIPTV_UDP.dll"
+  ; Copy default INI?
+  ; File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ini"
+
   File "${git_DirectShowFilters}\StreamingServer\bin\${BUILD_TYPE}\StreamingServer.dll"
   
   File "${git_DirectShowFilters}\DXErr9\bin\${BUILD_TYPE}\dxerr9.dll"
@@ -589,6 +599,16 @@ ${MementoSectionEnd}
   Delete "$INSTDIR\tevii.dll"
   Delete "$INSTDIR\Ionic.Zip.dll"
   Delete "$INSTDIR\Interop.SHDocVw.dll"
+
+  ; support files for MPIPTVSource.ax
+  Delete "$INSTDIR\MPIPTV_FILE.dll"
+  Delete "$INSTDIR\MPIPTV_HTTP.dll"
+  Delete "$INSTDIR\MPIPTV_KARTINA.dll"
+  Delete "$INSTDIR\MPIPTV_RTP.dll"
+  Delete "$INSTDIR\MPIPTV_RTSP.dll"
+  Delete "$INSTDIR\MPIPTV_UDP.dll"
+  ; not sure if we should delete INI
+  ; Delete "$INSTDIR\MPIPTVSource.ini"
 
   ; remove Start Menu shortcuts
   Delete "${STARTMENU_GROUP}\TV-Server Configuration.lnk"
