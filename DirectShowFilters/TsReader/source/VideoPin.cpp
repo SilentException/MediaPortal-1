@@ -452,10 +452,9 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
               if (m_pTsReaderFilter->m_ShowBufferVideo || fTime < 0.030)
               {
                 int cntA, cntV;
-                DWORD  audSampleCount;
                 CRefTime firstAudio, lastAudio;
                 CRefTime firstVideo, lastVideo;
-                cntA = demux.GetAudioBufferPts(firstAudio, lastAudio, audSampleCount); 
+                cntA = demux.GetAudioBufferPts(firstAudio, lastAudio); 
                 cntV = demux.GetVideoBufferPts(firstVideo, lastVideo) + 1;
 
                 LogDebug("Vid/Ref : %03.3f, Late %c-frame(%02d), Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, TsMeanDiff %0.3f ms", (float)RefTime.Millisecs()/1000.0f,buffer->GetFrameType(),buffer->GetFrameCount(), (float)cRefTime.Millisecs()/1000.0f, fTime, cntA,cntV,clock, m_pTsReaderFilter->State(), (float)m_fMTDMean/10000.0f);
@@ -487,7 +486,44 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
           demux.EraseVideoBuff();
           buffer = NULL;
         }
-        Sleep(1); // Avoid excessive video Fill buffer preemption
+         
+        // Avoid excessive video Fill buffer preemption
+        // and slow down emptying rate when data gets really low
+        double frameTime;
+        int buffCnt = demux.GetVideoBufferCnt(&frameTime);
+        DWORD sampSleepTime = max(1,(DWORD)(frameTime/4.0));
+        
+        switch (buffCnt)
+        {
+          case 8 :
+      	    sampSleepTime = 5;
+            break;
+          case 7 :
+      	    sampSleepTime = 5;
+            break;
+          case 6 :
+      	    sampSleepTime = 5;
+            break;
+          case 5 :
+      	    sampSleepTime = min(10,sampSleepTime);
+            break;
+          case 4 :
+      	    sampSleepTime = min(10,sampSleepTime);
+            break;
+          case 3 :
+      	    sampSleepTime = min(10,sampSleepTime);
+            break;
+          case 2 :
+      	    sampSleepTime = min(10,sampSleepTime);
+            break;
+          case 1 :
+      	    sampSleepTime = min(10,sampSleepTime);
+            break;
+          default :
+       	    sampSleepTime = 1;
+        }
+        
+        Sleep(sampSleepTime);           
       }
     } while (buffer == NULL);
     return NOERROR;

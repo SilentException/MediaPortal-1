@@ -84,8 +84,10 @@ public:
   void       SetEndOfFile(bool bEndOfFile);
   CPidTable  GetPidTable();
 
-  int        GetAudioBufferPts(CRefTime& First, CRefTime& Last, DWORD& SampleCount) ;
+  int        GetAudioBufferPts(CRefTime& First, CRefTime& Last) ;
   int        GetVideoBufferPts(CRefTime& First, CRefTime& Last) ;
+  int        GetVideoBufferCnt(double* frameTime);
+  void       GetBufferCounts(int* ACnt, int* VCnt);
 
   bool       SetAudioStream(__int32 stream);
   bool       GetAudioStream(__int32 &stream);
@@ -195,7 +197,6 @@ private:
   CRefTime  m_LastAudioSample;
   CRefTime  m_FirstVideoSample;
   CRefTime  m_LastVideoSample;
-  DWORD     m_AudioSampleCount;
 
   CBuffer* m_pCurrentTeletextBuffer;
   CBuffer* m_pCurrentSubtitleBuffer;

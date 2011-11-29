@@ -242,13 +242,12 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
       else
       {
         m_bPresentSample = true ;
-        m_sampleSleepTime = 1;
+        DWORD sampSleepTime = 1;
         
         int cntA,cntV ;
-        DWORD  audSampleCount;
         CRefTime firstAudio, lastAudio;
         CRefTime firstVideo, lastVideo;
-        cntA = demux.GetAudioBufferPts(firstAudio, lastAudio, audSampleCount); // this one...
+        cntA = demux.GetAudioBufferPts(firstAudio, lastAudio); // this one...
         cntV = demux.GetVideoBufferPts(firstVideo, lastVideo);
         #define PRESENT_DELAY 0000000
         
@@ -326,18 +325,6 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           m_bSubtitleCompensationSet = false;
         }
 
-        //Calculate sleep times (average sample duration/4)
-        if (m_dRateSeeking == 1.0)
-        {
-          m_sampleDuration = GetAverageSampleDur(lastAudio.GetUnits());
-          m_sampleSleepTime = (DWORD)min(20, max(1, m_sampleDuration/40000));
-        }
-        else
-        {
-          m_sampleDuration = GetAverageSampleDur(lastAudio.GetUnits());
-          m_sampleSleepTime = 1;
-        }
-
         // Subtitle filter is "found" only after Run() has been completed
         if(!m_bSubtitleCompensationSet)
         {
@@ -372,19 +359,36 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           //(helps with signal corruption recovery)
           if ((cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) && (fTime > -0.2) && (fTime < 2.0))
           {
-            if (fTime > 0.5)
+            double stallPoint;
+            if (m_nNextASD < 200)
+            {
+              //Slowly increase stall point threshold from start (1 ms per sample)
+              stallPoint = 0.2 + ((double)m_nNextASD * 0.001);
+            }
+            else
+            {
+              stallPoint = 0.5;
+            }
+            if (fTime > stallPoint)
             {
               //Too early - stall to avoid over-filling of audio decode/renderer buffers
               Sleep(10);
               buffer = NULL;
               continue;
-            }
+            }           
           }
           else //Don't drop samples normally - it upsets the rate matching in the audio renderer
           {
             // Sample is too late.
             m_bPresentSample = false ;
             m_bDiscontinuity = TRUE; //Next good sample will be discontinuous
+          }
+          
+          //Calculate sleep times (average sample duration/4)
+          m_sampleDuration = GetAverageSampleDur(RefTime.GetUnits());
+          if (m_dRateSeeking == 1.0)
+          {
+            sampSleepTime = (DWORD)min(20, max(1, m_sampleDuration/40000));
           }
         }
 
@@ -412,7 +416,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
             {
               if (m_pTsReaderFilter->m_ShowBufferAudio || fTime < 0.030)
               {
-                LogDebug("Aud/Ref : %03.3f, Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, Sleep %d ms", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State(), m_sampleSleepTime);
+                LogDebug("Aud/Ref : %03.3f, Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, Sleep %d ms", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State(), sampSleepTime);
               }
               if (m_pTsReaderFilter->m_ShowBufferAudio) m_pTsReaderFilter->m_ShowBufferAudio--;
             }
@@ -432,7 +436,8 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           //delete the buffer and return
           delete buffer;
           demux.EraseAudioBuff();
-          Sleep(m_sampleSleepTime) ; //Sleep for a time derived from data rate
+          Sleep(sampSleepTime) ; //Sleep for a time derived from data rate
+          m_sampleSleepTime = sampSleepTime;
         }
         else
         { // Buffer was not displayed because it was out of date, search for next.

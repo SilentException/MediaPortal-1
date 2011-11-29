@@ -171,7 +171,7 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   GetLogFile(filename);
   ::DeleteFile(filename);
   LogDebug("--- Buffer-empty rate control testing ----");
-  LogDebug("---------- v0.4.33 XXX -------------------");
+  LogDebug("---------- v0.0.34 XXX -------------------");
 
   m_fileReader=NULL;
   m_fileDuration=NULL;
@@ -1446,10 +1446,9 @@ void CTsReaderFilter::ThreadProc()
       {
         CRefTime firstAudio, lastAudio;
         CRefTime firstVideo, lastVideo;
-        DWORD  audSampleCount;
         DWORD  audSampleSleep = 0;
         float  audSampleDur = 0.0;
-        int cntA = m_demultiplexer.GetAudioBufferPts(firstAudio, lastAudio, audSampleCount);
+        int cntA = m_demultiplexer.GetAudioBufferPts(firstAudio, lastAudio);
         int cntV = m_demultiplexer.GetVideoBufferPts(firstVideo, lastVideo);
         
         if (m_pAudioPin->IsConnected())
@@ -1798,7 +1797,9 @@ void CTsReaderFilter::BufferingPause(bool longPause)
       {
         if (m_State == State_Running)
         {
-          LogDebug("Pause %d mS renderer clock to match provider/RTSP clock...", sleepTime) ; 
+          int ACnt, VCnt;
+          m_demultiplexer.GetBufferCounts(&ACnt, &VCnt);
+          LogDebug("Pause %d mS renderer clock to match provider/RTSP clock, A/V = %d/%d ", sleepTime, ACnt, VCnt) ; 
           ptrMediaCtrl->Pause() ;         
           Sleep(sleepTime) ;
           m_demultiplexer.ReadAheadFromFile(); //File read prefetch
