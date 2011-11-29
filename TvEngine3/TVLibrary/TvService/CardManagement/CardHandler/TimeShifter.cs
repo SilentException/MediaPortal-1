@@ -81,22 +81,6 @@ namespace TvService
         if (_cardHandler.DataBaseCard.Enabled == false)
           return "";
 
-        try
-        {
-          RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-          if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-            return "";
-          if (_cardHandler.IsLocal == false)
-          {
-            return RemoteControl.Instance.TimeShiftFileName(ref user);
-          }
-        }
-        catch (Exception)
-        {
-          Log.Error("card: unable to connect to slave controller at:{0}",
-                    _cardHandler.DataBaseCard.ReferencedServer().HostName);
-          return "";
-        }
         ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
         if (context == null)
           return null;
@@ -126,23 +110,6 @@ namespace TvService
         if (_cardHandler.DataBaseCard.Enabled == false)
           return false;
 
-        try
-        {
-          RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-          if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-            return false;
-          if (_cardHandler.IsLocal == false)
-          {
-            return RemoteControl.Instance.TimeShiftGetCurrentFilePosition(ref user, ref position,
-                                                                          ref bufferId);
-          }
-        }
-        catch (Exception)
-        {
-          Log.Error("card: unable to connect to slave controller at:{0}",
-                    _cardHandler.DataBaseCard.ReferencedServer().HostName);
-          return false;
-        }
         ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
         if (context == null)
           return false;
@@ -196,22 +163,6 @@ namespace TvService
         if (_cardHandler.DataBaseCard.Enabled == false)
           return false;
 
-        try
-        {
-          RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-          if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-            return false;
-          if (_cardHandler.IsLocal == false)
-          {
-            return RemoteControl.Instance.IsTimeShifting(ref user);
-          }
-        }
-        catch (Exception)
-        {
-          Log.Error("card: unable to connect to slave controller at:{0}",
-                    _cardHandler.DataBaseCard.ReferencedServer().HostName);
-          return false;
-        }
         ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
         if (context == null)
           return false;
@@ -242,23 +193,6 @@ namespace TvService
       {
         if (_cardHandler.DataBaseCard.Enabled == false)
           return DateTime.MinValue;
-
-        try
-        {
-          RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-          if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-            return DateTime.MinValue;
-          if (_cardHandler.IsLocal == false)
-          {
-            return RemoteControl.Instance.TimeShiftStarted(user);
-          }
-        }
-        catch (Exception)
-        {
-          Log.Error("card: unable to connect to slave controller at:{0}",
-                    _cardHandler.DataBaseCard.ReferencedServer().HostName);
-          return DateTime.MinValue;
-        }
 
         ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
         if (context == null)
@@ -336,45 +270,26 @@ namespace TvService
 
         lock (this)
         {
-          try
-          {
-            RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-            if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-              return TvResult.CardIsDisabled;
-
-
+          
             // Let's verify if hard disk drive has enough free space before we start time shifting. The function automatically handles both local and UNC paths
-            if (!IsTimeShifting(ref user))
-            {
-              ulong FreeDiskSpace = Utils.GetFreeDiskSpace(fileName);
-
-              TvBusinessLayer layer = new TvBusinessLayer();
-              UInt32 MaximumFileSize = UInt32.Parse(layer.GetSetting("timeshiftMaxFileSize", "256").Value); // in MB
-              ulong DiskSpaceNeeded = Convert.ToUInt64(MaximumFileSize);
-              DiskSpaceNeeded *= 1000000 * 2; // Convert to bytes; 2 times of timeshiftMaxFileSize
-              if (FreeDiskSpace < DiskSpaceNeeded)
-                // TimeShifter need at least this free disk space otherwise, it will not start.
-              {
-                Stop(ref user);
-                return TvResult.NoFreeDiskSpace;
-              }
-            }
-
-            Log.Write("card: StartTimeShifting {0} {1} ", _cardHandler.DataBaseCard.IdCard, fileName);
-
-            if (_cardHandler.IsLocal == false)
-            {
-              return RemoteControl.Instance.StartTimeShifting(ref user, ref fileName);
-            }
-          }
-          catch (Exception)
+          if (!IsTimeShifting(ref user))
           {
-            Log.Error("card: unable to connect to slave controller at:{0}",
-                      _cardHandler.DataBaseCard.ReferencedServer().HostName);
-            Stop(ref user);
-            return TvResult.UnknownError;
+            ulong FreeDiskSpace = Utils.GetFreeDiskSpace(fileName);
+
+            TvBusinessLayer layer = new TvBusinessLayer();
+            UInt32 MaximumFileSize = UInt32.Parse(layer.GetSetting("timeshiftMaxFileSize", "256").Value); // in MB
+            ulong DiskSpaceNeeded = Convert.ToUInt64(MaximumFileSize);
+            DiskSpaceNeeded *= 1000000*2; // Convert to bytes; 2 times of timeshiftMaxFileSize
+            if (FreeDiskSpace < DiskSpaceNeeded)
+                // TimeShifter need at least this free disk space otherwise, it will not start.
+            {
+              Stop(ref user);
+              return TvResult.NoFreeDiskSpace;
+            }
           }
 
+          Log.Write("card: StartTimeShifting {0} {1} ", _cardHandler.DataBaseCard.IdCard, fileName);
+          
           ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
           if (context == null)
           {
@@ -501,26 +416,6 @@ namespace TvService
 
         lock (this)
         {
-          try
-          {
-            RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-            if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-              return true;
-
-            Log.Write("card: StopTimeShifting user:{0} sub:{1}", user.Name, user.SubChannel);
-
-            if (_cardHandler.IsLocal == false)
-            {
-              return RemoteControl.Instance.StopTimeShifting(ref user);
-            }
-          }
-          catch (Exception)
-          {
-            Log.Error("card: unable to connect to slave controller at:{0}",
-                      _cardHandler.DataBaseCard.ReferencedServer().HostName);
-            return false;
-          }
-
           ITvCardContext context = _cardHandler.Card.Context as ITvCardContext;
           if (context == null)
             return true;
@@ -561,19 +456,6 @@ namespace TvService
         if (_cardHandler.DataBaseCard.Enabled == false)
           return TvResult.CardIsDisabled;
 
-        try
-        {
-          RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-          if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-            return TvResult.CardIsDisabled;
-        }
-        catch (Exception)
-        {
-          Log.Error("card: unable to connect to slave controller at:{0}",
-                    _cardHandler.DataBaseCard.ReferencedServer().HostName);
-          return TvResult.UnknownError;
-        }
-
         Log.WriteFile("card: CardTimeShift {0} {1}", _cardHandler.DataBaseCard.IdCard, fileName);
         if (IsTimeShifting(ref user))
           return TvResult.Succeeded;
@@ -597,19 +479,7 @@ namespace TvService
       scrambled = false;
       if (_cardHandler.DataBaseCard.Enabled == false)
         return false;
-      try
-      {
-        RemoteControl.HostName = _cardHandler.DataBaseCard.ReferencedServer().HostName;
-        if (!RemoteControl.Instance.CardPresent(_cardHandler.DataBaseCard.IdCard))
-          return false;
-      }
-      catch (Exception)
-      {
-        Log.Error("card: unable to connect to slave controller at:{0}",
-                  _cardHandler.DataBaseCard.ReferencedServer().HostName);
-        return false;
-      }
-
+      
       // no need to wait for unscrambled signal, since the wait audio video pids are internally raised in tswriter when the packets are unscrambled.
       // instead we should query tswriter in the event that no audio/video events was received, wether or not the current state of the stream is scrambled or not.
       /*

@@ -409,7 +409,7 @@ namespace TvService
             if (_tvController.IsCardInUse(card.IdCard, out cardUser) == false)
             {
               _user.CardId = card.IdCard;
-              result = RemoteControl.Instance.Tune(ref _user, tuning, channel.IdChannel);
+              result = _tvController.Tune(ref _user, tuning, channel.IdChannel);
               if (result == TvResult.Succeeded)
               {
                 if (!_isRunning || false == _tvController.GrabEpg(this, card.IdCard))
@@ -454,7 +454,7 @@ namespace TvService
           try
           {
             _user.CardId = card.IdCard;
-            result = RemoteControl.Instance.Tune(ref _user, tuning, channel.IdChannel);
+            result = _tvController.Tune(ref _user, tuning, channel.IdChannel);
             if (result == TvResult.Succeeded)
             {
               if (!_isRunning || false == _tvController.GrabEpg(this, card.IdCard))
@@ -498,7 +498,7 @@ namespace TvService
           try
           {
             _user.CardId = card.IdCard;
-            result = RemoteControl.Instance.Tune(ref _user, tuning, channel.IdChannel);
+            result = _tvController.Tune(ref _user, tuning, channel.IdChannel);
             if (result == TvResult.Succeeded)
             {
               if (!_isRunning || false == _tvController.GrabEpg(this, card.IdCard))
@@ -542,7 +542,7 @@ namespace TvService
           try
           {
             _user.CardId = card.IdCard;
-            result = RemoteControl.Instance.Tune(ref _user, tuning, channel.IdChannel);
+            result = _tvController.Tune(ref _user, tuning, channel.IdChannel);
             if (result == TvResult.Succeeded)
             {
               if (!_isRunning || false == _tvController.GrabEpg(this, card.IdCard))
@@ -586,7 +586,7 @@ namespace TvService
           try
           {
             _user.CardId = card.IdCard;
-            result = RemoteControl.Instance.Tune(ref _user, tuning, channel.IdChannel);
+            result = _tvController.Tune(ref _user, tuning, channel.IdChannel);
             if (result == TvResult.Succeeded)
             {
               if (!_isRunning || false == _tvController.GrabEpg(this, card.IdCard))
@@ -704,11 +704,11 @@ namespace TvService
         return false;
       IUser user = new User();
       user.CardId = cardId;
-      if (RemoteControl.Instance.IsRecording(ref user))
+      if (_tvController.IsRecording(ref user))
         return false;
-      if (RemoteControl.Instance.IsTimeShifting(ref user))
+      if (_tvController.IsTimeShifting(ref user))
         return false;
-      if (RemoteControl.Instance.IsScanning(user.CardId))
+      if (_tvController.IsScanning(user.CardId))
         return false;
       IUser cardUser;
       if (_tvController.IsCardInUse(cardId, out cardUser))
@@ -735,11 +735,11 @@ namespace TvService
         return false;
       if (user.CardId < 0)
         return false;
-      if (RemoteControl.Instance.IsRecording(ref _user))
+      if (_tvController.IsRecording(ref _user))
         return false;
-      if (RemoteControl.Instance.IsTimeShifting(ref _user))
+      if (_tvController.IsTimeShifting(ref _user))
         return false;
-      if (RemoteControl.Instance.IsScanning(user.CardId))
+      if (_tvController.IsScanning(user.CardId))
         return false;
       IUser cardUser;
       if (_tvController.IsCardInUse(user.CardId, out cardUser))

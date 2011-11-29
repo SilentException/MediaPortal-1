@@ -1347,14 +1347,13 @@ namespace TvService
 
     private void CreateRecording(RecordingDetail RecDetail)
     {
-      int idServer = RecDetail.CardInfo.Card.IdServer;
       Log.Debug(String.Format("Scheduler: adding new row in db for title=\"{0}\" of type=\"{1}\"",
                               RecDetail.Program.Title, RecDetail.Schedule.ScheduleType));
       RecDetail.Recording = new Recording(RecDetail.Schedule.IdChannel, RecDetail.Schedule.IdSchedule, true,
                                           RecDetail.RecordingStartDateTime, DateTime.Now, RecDetail.Program.Title,
                                           RecDetail.Program.Description, RecDetail.Program.Genre, RecDetail.FileName,
                                           RecDetail.Schedule.KeepMethod,
-                                          RecDetail.Schedule.KeepDate, 0, idServer, RecDetail.Program.EpisodeName,
+                                          RecDetail.Schedule.KeepDate, 0, RecDetail.Program.EpisodeName,
                                           RecDetail.Program.SeriesNum, RecDetail.Program.EpisodeNum,
                                           RecDetail.Program.EpisodePart);
       RecDetail.Recording.Persist();
