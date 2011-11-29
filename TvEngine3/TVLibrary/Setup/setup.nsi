@@ -431,15 +431,13 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   File "${TVSERVER.BASE}\tevii.dll"
   File "${TVSERVER.BASE}\Ionic.Zip.dll"
 
-  ; support files for MPIPTVSource.ax
-  File "${git_DirectShowFilters}\MPIPTV_FILE\bin\${BUILD_TYPE}\MPIPTV_FILE.dll"
-  File "${git_DirectShowFilters}\MPIPTV_HTTP\bin\${BUILD_TYPE}\MPIPTV_HTTP.dll"
-  File "${git_DirectShowFilters}\MPIPTV_KARTINA\bin\${BUILD_TYPE}\MPIPTV_KARTINA.dll"
-  File "${git_DirectShowFilters}\MPIPTV_RTP\bin\${BUILD_TYPE}\MPIPTV_RTP.dll"
-  File "${git_DirectShowFilters}\MPIPTV_RTSP\bin\${BUILD_TYPE}\MPIPTV_RTSP.dll"
-  File "${git_DirectShowFilters}\MPIPTV_UDP\bin\${BUILD_TYPE}\MPIPTV_UDP.dll"
-  ; Copy default INI?
-  ; File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ini"
+  ; protocol implementations for MPIPTVSource.ax
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_FILE\bin\${BUILD_TYPE}\MPIPTV_FILE.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_HTTP\bin\${BUILD_TYPE}\MPIPTV_HTTP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_KARTINA\bin\${BUILD_TYPE}\MPIPTV_KARTINA.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_RTP\bin\${BUILD_TYPE}\MPIPTV_RTP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_RTSP\bin\${BUILD_TYPE}\MPIPTV_RTSP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_UDP\bin\${BUILD_TYPE}\MPIPTV_UDP.dll"
 
   File "${git_DirectShowFilters}\StreamingServer\bin\${BUILD_TYPE}\StreamingServer.dll"
   
@@ -451,6 +449,7 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   SetOutPath "${COMMON_APPDATA}"
   File "${git_Common_MP_TVE3}\Gentle.config"
   File "${TVSERVER.BASE}\log4net.config"
+  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTVSource\MPIPTVSource.ini"
   File "${TVSERVER.BASE}\TvSetupLog.config"
   
   #---------------------------------------------------------------------------
@@ -468,7 +467,7 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPWriter\bin\${BUILD_TYPE}\mpFileWriter.ax" "$INSTDIR\mpFileWriter.ax" "$INSTDIR"
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\bin\Release\PDMpgMux.ax" "$INSTDIR\PDMpgMux.ax" "$INSTDIR"
   ; filter for IPTV support
-  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ax" "$INSTDIR\MPIPTVSource.ax" "$INSTDIR"
+  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPIPTVSource\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ax" "$INSTDIR\MPIPTVSource.ax" "$INSTDIR"
 
   #---------------------------------------------------------------------------
   # SERVICE INSTALLATION
@@ -549,6 +548,8 @@ ${MementoSectionEnd}
   RMDir /r "${COMMON_APPDATA}\WebEPG\grabbers"
   ; Remove XMLTV data dir
   Delete "${COMMON_APPDATA}\xmltv\xmltv.dtd"
+  ; Remove ini file for IPTV filter
+  Delete "${COMMON_APPDATA}\MPIPTVSource.ini"
 
   ; Remove Plugins
   Delete "$INSTDIR\Plugins\ComSkipLauncher.dll"
@@ -600,15 +601,13 @@ ${MementoSectionEnd}
   Delete "$INSTDIR\Ionic.Zip.dll"
   Delete "$INSTDIR\Interop.SHDocVw.dll"
 
-  ; support files for MPIPTVSource.ax
+  ; protocol implementations for MPIPTVSource.ax
   Delete "$INSTDIR\MPIPTV_FILE.dll"
   Delete "$INSTDIR\MPIPTV_HTTP.dll"
   Delete "$INSTDIR\MPIPTV_KARTINA.dll"
   Delete "$INSTDIR\MPIPTV_RTP.dll"
   Delete "$INSTDIR\MPIPTV_RTSP.dll"
-  Delete "$INSTDIR\MPIPTV_UDP.dll"
-  ; not sure if we should delete INI
-  ; Delete "$INSTDIR\MPIPTVSource.ini"
+  Delete "$INSTDIR\MPIPTV_UDP.dll"  
 
   ; remove Start Menu shortcuts
   Delete "${STARTMENU_GROUP}\TV-Server Configuration.lnk"
