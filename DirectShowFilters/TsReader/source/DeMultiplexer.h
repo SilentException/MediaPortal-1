@@ -134,7 +134,8 @@ public:
   void SetAudioChanging(bool onOff);
   bool IsAudioChanging(void);
 
-  int ReadAheadFromFile();
+  int  ReadAheadFromFile();
+  bool CheckPrefetchState();
 
   bool m_DisableDiscontinuitiesFiltering;
   DWORD m_LastDataFromRtsp;

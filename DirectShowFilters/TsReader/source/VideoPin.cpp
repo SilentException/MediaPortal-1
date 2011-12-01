@@ -68,6 +68,7 @@ bool CVideoPin::IsConnected()
 {
   return m_bConnected;
 }
+
 STDMETHODIMP CVideoPin::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
 {
   if (riid == IID_IMediaSeeking)
@@ -304,6 +305,23 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
 
       if (m_pTsReaderFilter->m_bStreamCompensated && !demux.m_bFlushRunning)
       {       
+        // Avoid excessive video Fill buffer preemption
+        // and slow down emptying rate when data available gets really low
+        double frameTime;
+        int buffCnt = demux.GetVideoBufferCnt(&frameTime);
+        DWORD sampSleepTime = max(1,(DWORD)(frameTime/4.0));
+        
+        if ((buffCnt < 9) && (buffCnt > 5))
+        {
+      	  sampSleepTime = 5;
+        }
+        else if (buffCnt == 0)
+        {
+      	  sampSleepTime = 1;
+        }
+                        
+        Sleep(min(10,sampSleepTime));
+                 
         CAutoLock flock (&demux.m_sectionFlushVideo);
         // Get next video buffer from demultiplexer
         buffer=demux.GetVideo();
@@ -487,43 +505,6 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
           buffer = NULL;
         }
          
-        // Avoid excessive video Fill buffer preemption
-        // and slow down emptying rate when data gets really low
-        double frameTime;
-        int buffCnt = demux.GetVideoBufferCnt(&frameTime);
-        DWORD sampSleepTime = max(1,(DWORD)(frameTime/4.0));
-        
-        switch (buffCnt)
-        {
-          case 8 :
-      	    sampSleepTime = 5;
-            break;
-          case 7 :
-      	    sampSleepTime = 5;
-            break;
-          case 6 :
-      	    sampSleepTime = 5;
-            break;
-          case 5 :
-      	    sampSleepTime = min(10,sampSleepTime);
-            break;
-          case 4 :
-      	    sampSleepTime = min(10,sampSleepTime);
-            break;
-          case 3 :
-      	    sampSleepTime = min(10,sampSleepTime);
-            break;
-          case 2 :
-      	    sampSleepTime = min(10,sampSleepTime);
-            break;
-          case 1 :
-      	    sampSleepTime = min(10,sampSleepTime);
-            break;
-          default :
-       	    sampSleepTime = 1;
-        }
-        
-        Sleep(sampSleepTime);           
       }
     } while (buffer == NULL);
     return NOERROR;

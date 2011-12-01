@@ -560,7 +560,7 @@ CBuffer* CDeMultiplexer::GetVideo()
     return NULL;
   }
 
-  if ((m_vecVideoBuffers.size() < 12) || (m_vecAudioBuffers.size() < 2) || !m_bAudioVideoReady)
+  if (CheckPrefetchState())
   {
     //Prefetch some data
     m_bReadAheadFromFile = true;
@@ -614,7 +614,7 @@ CBuffer* CDeMultiplexer::GetAudio()
     return NULL;
   }
 
-  if ((m_vecVideoBuffers.size() < 12) || (m_vecAudioBuffers.size() < 2) || !m_bAudioVideoReady)
+  if (CheckPrefetchState())
   {
     //Prefetch some data
     m_bReadAheadFromFile = true;
@@ -1994,6 +1994,33 @@ int CDeMultiplexer::GetVideoBufferCnt(double* frameTime)
     *frameTime = 10.0;
   }
   return m_vecVideoBuffers.size();
+}
+
+//Decide if we need to prefetch more data
+bool CDeMultiplexer::CheckPrefetchState()
+{  
+  if (!m_bAudioVideoReady)
+  {
+    return true;
+  }
+
+  if (m_filter.GetVideoPin()->IsConnected())
+  {
+    if (m_vecVideoBuffers.size() < 8)
+    {
+      return true;
+    }
+  }
+
+  if (m_filter.GetAudioPin()->IsConnected())
+  {
+    if (m_vecAudioBuffers.size() < 2)
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void CDeMultiplexer::GetBufferCounts(int* ACnt, int* VCnt)
