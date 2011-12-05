@@ -76,7 +76,7 @@ int CMPIPTV_RTP::Initialize(HANDLE lockMutex, CParameterCollection *configuratio
 {
   if (configuration != NULL)
   {
-    CParameterCollection *udpParameters = GetConfiguration(CONFIGURATION_SECTION_UDP);
+    CParameterCollection *udpParameters = GetConfiguration(&this->logger, PROTOCOL_IMPLEMENTATION_NAME, METHOD_INITIALIZE_NAME, CONFIGURATION_SECTION_UDP);
     configuration->Append(udpParameters);
     delete udpParameters;
   }
@@ -86,6 +86,10 @@ int CMPIPTV_RTP::Initialize(HANDLE lockMutex, CParameterCollection *configuratio
   this->receiveDataTimeout = this->configurationParameters->GetValueLong(CONFIGURATION_RTP_RECEIVE_DATA_TIMEOUT, true, RTP_RECEIVE_DATA_TIMEOUT_DEFAULT);
   this->maxFailedPackets = this->configurationParameters->GetValueLong(CONFIGURATION_RTP_MAX_FAILED_PACKETS, true, RTP_MAX_FAILED_PACKETS_DEFAULT);
   this->openConnetionMaximumAttempts = this->configurationParameters->GetValueLong(CONFIGURATION_RTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS, true, RTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT);
+
+  this->maxFailedPackets = (this->maxFailedPackets <= 0) ? RTP_MAX_FAILED_PACKETS_DEFAULT : this->maxFailedPackets;
+  this->receiveDataTimeout = (this->receiveDataTimeout < 0) ? RTP_RECEIVE_DATA_TIMEOUT_DEFAULT : this->receiveDataTimeout;
+  this->openConnetionMaximumAttempts = (this->openConnetionMaximumAttempts < 0) ? RTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT : this->openConnetionMaximumAttempts;
 
   return result;
 }
@@ -287,6 +291,11 @@ void CMPIPTV_RTP::ReceiveData(bool *shouldExit)
           else
           {
             this->logger.Log(LOGGER_INFO, _T("%s: %s: bytes received: %i"), PROTOCOL_IMPLEMENTATION_NAME, METHOD_RECEIVE_DATA_NAME, length);
+
+            if (this->dumpInputPackets)
+            {
+              DumpInputPacket(this->GetInstanceId(), length, this->receiveBuffer);
+            }
 
             bool isRtpPacket = this->rtpHandler->IsRtpPacket(this->receiveBuffer, (unsigned int)length);
             if (!isRtpPacket) 

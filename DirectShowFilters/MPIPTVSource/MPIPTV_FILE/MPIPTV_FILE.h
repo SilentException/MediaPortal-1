@@ -108,6 +108,9 @@ protected:
 
   // holds end of file log message
   unsigned int endOfFileReachedLogged;
+
+  // specifies if input packets have to be dumped to file
+  bool dumpInputPackets;
 };
 
 #endif

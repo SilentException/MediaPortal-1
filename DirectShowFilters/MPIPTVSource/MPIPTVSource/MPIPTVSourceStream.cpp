@@ -127,6 +127,8 @@ void CMPIPTVSourceStream::LoadPlugins()
   logger.Log(LOGGER_INFO, METHOD_START_FORMAT, MODULE_NAME, METHOD_LOAD_PLUGINS_NAME);
 
   unsigned int maxPlugins = this->configuration->GetValueLong(CONFIGURATION_MAX_PLUGINS, true, MAX_PLUGINS_DEFAULT);
+  // check value
+  maxPlugins = (maxPlugins < 0) ? MAX_PLUGINS_DEFAULT : maxPlugins;
 
   this->protocolImplementations = ALLOC_MEM(ProtocolImplementation, maxPlugins);
   if (this->protocolImplementations != NULL)
@@ -145,6 +147,8 @@ void CMPIPTVSourceStream::LoadPlugins()
     _tcscat_s(strDllSearch, _MAX_PATH, _T("mpiptv_*.dll"));
 
     logger.Log(LOGGER_VERBOSE, _T("%s: %s: search path: %s"), MODULE_NAME, METHOD_LOAD_PLUGINS_NAME, strDllPath);
+    // add plugins directory to search path
+    SetDllDirectory(strDllPath);
 
     h = FindFirstFile(strDllSearch, &info);
     if (h != INVALID_HANDLE_VALUE) 
@@ -230,7 +234,7 @@ void CMPIPTVSourceStream::LoadPlugins()
               // add global configuration parameters
               parameters->Append(this->configuration);
               // add protocol specific parameters
-              CParameterCollection *protocolSpecific = GetConfiguration(protocolImplementations[dllTotal].protocol);
+              CParameterCollection *protocolSpecific = GetConfiguration(&this->logger, MODULE_NAME, METHOD_LOAD_PLUGINS_NAME, protocolImplementations[dllTotal].protocol);
               parameters->Append(protocolSpecific);
 
               delete protocolSpecific;
@@ -337,6 +341,10 @@ HRESULT CMPIPTVSourceStream::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_P
 
   long iptvBufferSize = this->configuration->GetValueLong(CONFIGURATION_IPTV_BUFFER_SIZE, true, IPTV_BUFFER_SIZE_DEFAULT);
   long iptvBufferCount = this->configuration->GetValueLong(CONFIGURATION_IPTV_BUFFER_COUNT, true, IPTV_BUFFER_COUNT_DEFAULT);
+
+  // check value
+  iptvBufferSize = (iptvBufferSize <= 0) ? IPTV_BUFFER_SIZE_DEFAULT : iptvBufferSize;
+  iptvBufferCount = (iptvBufferCount <= 0) ? IPTV_BUFFER_COUNT_DEFAULT : iptvBufferCount;
 
   // ensure a minimum number of buffers
   pRequest->cBuffers = iptvBufferCount;
@@ -458,7 +466,7 @@ HRESULT CMPIPTVSourceStream::FillBuffer(IMediaSample *pSamp)
         TCHAR *guid = ConvertGuidToString(this->activeProtocol->GetInstanceId());
         if ((folder != NULL) && (guid != NULL))
         {
-          TCHAR *fileName = FormatString(_T("%slog\\mpiptv_raw_dump_%s.ts"), folder, guid);
+          TCHAR *fileName = FormatString(_T("%slog\\mpiptv_output_dump_%s.ts"), folder, guid);
           if (fileName != NULL)
           {
             // we have raw TS file path
@@ -621,6 +629,7 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
   Command com;
   
   DWORD conditionalAccessWaitingTimeout = this->configuration->GetValueLong(CONFIGURATION_CONDITIONAL_ACCESS_WAITING_TIMEOUT, true, CONDITIONAL_ACCESS_WAITING_TIMEOUT_DEFAULT);
+  conditionalAccessWaitingTimeout = (conditionalAccessWaitingTimeout < 0) ? CONDITIONAL_ACCESS_WAITING_TIMEOUT_DEFAULT : conditionalAccessWaitingTimeout;
 
   if (this->OnThreadStartPlay() != NOERROR)
   {
@@ -631,8 +640,8 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
   {
     this->status = STATUS_INITIALIZED;
     // suppress data from send to another filter
-    bool suppressData = TRUE;
-    bool finishWork = FALSE;
+    bool suppressData = true;
+    bool finishWork = false;
     do 
     {
       while ((!CheckRequest(&com)) && (!finishWork))
@@ -653,7 +662,7 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
         {
           if ((GetTickCount() - this->runMethodExecuted) >= conditionalAccessWaitingTimeout)
           {
-            suppressData = FALSE;
+            suppressData = false;
             this->logger.Log(LOGGER_INFO, METHOD_MESSAGE_FORMAT, MODULE_NAME, METHOD_DO_BUFFER_PROCESSING_LOOP_NAME, _T("stop suppressing data"));
           }
         }
@@ -696,7 +705,7 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
             {
               this->logger.Log(LOGGER_ERROR, _T("%s: %s: Deliver() error: %08X"), MODULE_NAME, METHOD_DO_BUFFER_PROCESSING_LOOP_NAME, hr);
               result = S_OK;
-              finishWork = TRUE;
+              finishWork = true;
             }
           } 
           else if (hr == S_FALSE) 
@@ -705,7 +714,7 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
             pSample->Release();
             DeliverEndOfStream();
             result = S_OK;
-            finishWork = TRUE;
+            finishWork = true;
           } 
           else 
           {
@@ -715,7 +724,7 @@ HRESULT CMPIPTVSourceStream::DoBufferProcessingLoop(void)
             DeliverEndOfStream();
             m_pFilter->NotifyEvent(EC_ERRORABORT, hr, 0);
             result = hr;
-            finishWork = TRUE;
+            finishWork = true;
           }
           // all paths release the sample
         }

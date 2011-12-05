@@ -243,4 +243,11 @@ MPIPTVSOURCE_API int SendString(CLogger *logger, const TCHAR *protocolName, cons
 // @return : returns zero if no data, the length of data if successful, SOCKET_ERROR if error
 MPIPTVSOURCE_API int GetDataFromSocket(CLogger *logger, const TCHAR *protocolName, const TCHAR *functionName, SOCKET s, char *buffer, unsigned int length);
 
+// write input packet to dump file
+// @param protocolInstance : instance identifier of protocol
+// @param length : the length of packet
+// @param packet : a pointer to packet data to dump
+// @return : return zero if no error
+MPIPTVSOURCE_API int DumpInputPacket(GUID protocolInstance, unsigned int length, char *packet);
+
 #endif

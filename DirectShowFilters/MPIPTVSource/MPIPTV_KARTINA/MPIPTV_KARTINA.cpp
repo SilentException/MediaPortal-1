@@ -73,7 +73,7 @@ int CMPIPTV_KARTINA::Initialize(HANDLE lockMutex, CParameterCollection *configur
 {
   if (configuration != NULL)
   {
-    CParameterCollection *httpParameters = GetConfiguration(CONFIGURATION_SECTION_HTTP);
+    CParameterCollection *httpParameters = GetConfiguration(&this->logger, PROTOCOL_IMPLEMENTATION_NAME, METHOD_INITIALIZE_NAME, CONFIGURATION_SECTION_HTTP);
     configuration->Append(httpParameters);
     delete httpParameters;
   }
@@ -82,6 +82,9 @@ int CMPIPTV_KARTINA::Initialize(HANDLE lockMutex, CParameterCollection *configur
 
   this->receiveDataTimeout = this->configurationParameters->GetValueLong(CONFIGURATION_KARTINA_RECEIVE_DATA_TIMEOUT, true, KARTINA_RECEIVE_DATA_TIMEOUT_DEFAULT);
   this->openConnetionMaximumAttempts = this->configurationParameters->GetValueLong(CONFIGURATION_KARTINA_OPEN_CONNECTION_MAXIMUM_ATTEMPTS, true, KARTINA_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT);
+
+  this->receiveDataTimeout = (this->receiveDataTimeout < 0) ? KARTINA_RECEIVE_DATA_TIMEOUT_DEFAULT : this->receiveDataTimeout;
+  this->openConnetionMaximumAttempts = (this->openConnetionMaximumAttempts < 0) ? KARTINA_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT : this->openConnetionMaximumAttempts;
 
   return STATUS_OK;
 }
@@ -197,8 +200,8 @@ int CMPIPTV_KARTINA::OpenConnection(void)
   parameters->Append(this->loadParameters);
 
   // we must create configuration parameters for HTTP protocol
-  CParameterCollection *httpParameters = GetConfiguration(CONFIGURATION_SECTION_MPIPTVSOURCE);
-  httpParameters->Append(GetConfiguration(CONFIGURATION_SECTION_HTTP));
+  CParameterCollection *httpParameters = GetConfiguration(&this->logger, PROTOCOL_IMPLEMENTATION_NAME, METHOD_OPEN_CONNECTION_NAME, CONFIGURATION_SECTION_MPIPTVSOURCE);
+  httpParameters->Append(GetConfiguration(&this->logger, PROTOCOL_IMPLEMENTATION_NAME, METHOD_OPEN_CONNECTION_NAME, CONFIGURATION_SECTION_HTTP));
 
   CMPIPTV_HTTP http;
   http.Initialize(this->lockMutex, httpParameters);

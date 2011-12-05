@@ -37,13 +37,17 @@ CLogger::CLogger()
   this->maxLogSize = MAX_LOG_SIZE_DEFAULT;
 
   // set maximum log size
-  CParameterCollection *parameters = GetConfiguration(CONFIGURATION_SECTION_MPIPTVSOURCE);
+  CParameterCollection *parameters = GetConfiguration(NULL, NULL, NULL, CONFIGURATION_SECTION_MPIPTVSOURCE);
   if (parameters != NULL)
   {
     this->maxLogSize = parameters->GetValueLong(CONFIGURATION_MAX_LOG_SIZE, true, MAX_LOG_SIZE_DEFAULT);
     this->allowedLogVerbosity = parameters->GetValueLong(CONFIGURATION_LOG_VERBOSITY, true, LOG_VERBOSITY_DEFAULT);
     delete parameters;
   }
+
+  // check value
+  this->maxLogSize = (this->maxLogSize <= 0) ? MAX_LOG_SIZE_DEFAULT : this->maxLogSize;
+  this->allowedLogVerbosity = (this->allowedLogVerbosity < 0) ? LOG_VERBOSITY_DEFAULT : this->allowedLogVerbosity;
 }
 
 CLogger::~CLogger(void)

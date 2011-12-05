@@ -97,12 +97,17 @@ DWORD GetStringCount(const TCHAR *string, DWORD length)
   return result;
 }
 
-CParameterCollection *GetConfiguration(const TCHAR *section)
+CParameterCollection *GetConfiguration(CLogger *logger, const TCHAR *moduleName, const TCHAR *functionName, const TCHAR *section)
 {
   CParameterCollection *collection = new CParameterCollection();
   TCHAR *configurationFile = GetTvServerFilePath(_T("MPIPTVSource.ini"));
   if (configurationFile != NULL)
   {
+    if (logger != NULL)
+    {
+      logger->Log(LOGGER_INFO, _T("%s: %s: loading configuration file: %s, section: %s"), moduleName, functionName, configurationFile, section);
+    }
+
     LARGE_INTEGER size;
     size.QuadPart = 0;
     HANDLE hConfigFile = CreateFile(configurationFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -140,6 +145,13 @@ CParameterCollection *GetConfiguration(const TCHAR *section)
 
       CloseHandle(hConfigFile);
       hConfigFile = INVALID_HANDLE_VALUE;
+    }
+    else
+    {
+      if (logger != NULL)
+      {
+        logger->Log(LOGGER_WARNING, METHOD_MESSAGE_FORMAT, moduleName, functionName, _T("configuration file not loaded, using default values"));
+      }
     }
 
     FREE_MEM(configurationFile);

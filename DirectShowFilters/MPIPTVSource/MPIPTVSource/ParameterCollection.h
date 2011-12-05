@@ -36,6 +36,7 @@
 #define IPTV_BUFFER_SIZE_DEFAULT                                    32768
 #define DUMP_RAW_TS_DEFAULT                                         0
 #define ANALYZE_DISCONTINUITY_DEFAULT                               1
+#define DUMP_INPUT_PACKETS_DEFAULT                                  0
 
 #define CONFIGURATION_SECTION_MPIPTVSOURCE                          _T("MPIPTVSource")
 
@@ -47,6 +48,7 @@
 #define CONFIGURATION_IPTV_BUFFER_SIZE                              _T("IptvBufferSize")
 #define CONFIGURATION_DUMP_RAW_TS                                   _T("DumpRawTS")
 #define CONFIGURATION_ANALYZE_DISCONTINUITY                         _T("AnalyzeDiscontinuity")
+#define CONFIGURATION_DUMP_INPUT_PACKETS                            _T("DumpInputPackets")
 
 #define INTERFACE_PARAMETER_NAME                                    _T("interface")
 

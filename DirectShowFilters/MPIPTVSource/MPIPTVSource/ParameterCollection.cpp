@@ -61,7 +61,6 @@ bool CParameterCollection::Add(PCParameter parameter)
     // there is need to enlarge array of parameters
     // double number of allowed parameters
     this->parameterMaximumCount *= 2;
-    //PCParameter *parameterArray = (PCParameter *)CoTaskMemRealloc(this->parameters, this->parameterMaximumCount * sizeof(PCParameter));
     PCParameter *parameterArray = REALLOC_MEM(this->parameters, PCParameter, this->parameterMaximumCount);
 
     if (parameterArray == NULL)

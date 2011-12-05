@@ -37,7 +37,7 @@ CMPIPTVSource::CMPIPTVSource(IUnknown *pUnk, HRESULT *phr)
 
   // The pin magically adds itself to our pin array.
   this->m_parameters = new CParameterCollection();
-  this->m_configuration = GetConfiguration(CONFIGURATION_SECTION_MPIPTVSOURCE);
+  this->m_configuration = GetConfiguration(&this->logger, MODULE_NAME, METHOD_CONSTRUCTOR_NAME, CONFIGURATION_SECTION_MPIPTVSOURCE);
   this->m_stream = new CMPIPTVSourceStream(phr, this, this->m_configuration);
 
   if (phr)

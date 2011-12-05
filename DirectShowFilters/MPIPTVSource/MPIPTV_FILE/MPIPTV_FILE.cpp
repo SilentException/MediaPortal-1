@@ -115,11 +115,18 @@ int CMPIPTV_FILE::Initialize(HANDLE lockMutex, CParameterCollection *configurati
 
   long iptvBufferSize = this->configurationParameters->GetValueLong(CONFIGURATION_IPTV_BUFFER_SIZE, true, IPTV_BUFFER_SIZE_DEFAULT);
   long defaultMultiplier = this->configurationParameters->GetValueLong(CONFIGURATION_FILE_INTERNAL_BUFFER_MULTIPLIER, true, FILE_INTERNAL_BUFFER_MULTIPLIER_DEFAULT);
-  this->defaultBufferSize = defaultMultiplier * iptvBufferSize;
-  
   this->receiveDataTimeout = this->configurationParameters->GetValueLong(CONFIGURATION_FILE_RECEIVE_DATA_TIMEOUT, true, FILE_RECEIVE_DATA_TIMEOUT_DEFAULT);
   this->repeatLimit = this->configurationParameters->GetValueLong(CONFIGURATION_FILE_REPEAT_LIMIT, true, REPEAT_LIMIT_DEFAULT);
   this->openConnetionMaximumAttempts = this->configurationParameters->GetValueLong(CONFIGURATION_FILE_OPEN_CONNECTION_MAXIMUM_ATTEMPTS, true, FILE_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT);
+  this->dumpInputPackets = this->configurationParameters->GetValueBool(CONFIGURATION_DUMP_INPUT_PACKETS, true, DUMP_INPUT_PACKETS_DEFAULT);
+
+  iptvBufferSize = (iptvBufferSize <= 0) ? IPTV_BUFFER_SIZE_DEFAULT : iptvBufferSize;
+  defaultMultiplier = (defaultMultiplier <= 0) ? FILE_INTERNAL_BUFFER_MULTIPLIER_DEFAULT : defaultMultiplier;
+  this->repeatLimit  = (this->repeatLimit  < 0) ? REPEAT_LIMIT_DEFAULT : this->repeatLimit;
+  this->receiveDataTimeout = (this->receiveDataTimeout < 0) ? FILE_RECEIVE_DATA_TIMEOUT_DEFAULT : this->receiveDataTimeout;
+  this->openConnetionMaximumAttempts = (this->openConnetionMaximumAttempts < 0) ? FILE_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT : this->openConnetionMaximumAttempts;
+
+  this->defaultBufferSize = defaultMultiplier * iptvBufferSize;
 
   this->lockMutex = lockMutex;
   if (this->lockMutex == NULL)
@@ -377,6 +384,10 @@ void CMPIPTV_FILE::ReceiveData(bool *shouldExit)
       size_t bytesRead = fread_s(this->receiveBuffer, bufferSize, sizeof(char), bytesToRead, this->fileStream);
       if (bytesRead != 0)
       {
+        if (this->dumpInputPackets)
+        {
+          DumpInputPacket(this->GetInstanceId(), bytesRead, this->receiveBuffer);
+        }
         this->buffer.AddToBuffer(this->receiveBuffer, bytesRead);
       }
       if (feof(this->fileStream))

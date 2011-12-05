@@ -120,6 +120,9 @@ protected:
 
   // holds open connection maximum attempts
   unsigned int openConnetionMaximumAttempts;
+
+  // specifies if input packets have to be dumped to file
+  bool dumpInputPackets;
 };
 
 #endif

@@ -106,7 +106,7 @@ int CMPIPTV_RTSP::Initialize(HANDLE lockMutex, CParameterCollection *configurati
 {
   if (configuration != NULL)
   {
-    CParameterCollection *vlcParameters = GetConfiguration(CONFIGURATION_SECTION_UDP);
+    CParameterCollection *vlcParameters = GetConfiguration(&this->logger, PROTOCOL_IMPLEMENTATION_NAME, METHOD_INITIALIZE_NAME, CONFIGURATION_SECTION_UDP);
     configuration->Append(vlcParameters);
     delete vlcParameters;
   }
@@ -119,6 +119,13 @@ int CMPIPTV_RTSP::Initialize(HANDLE lockMutex, CParameterCollection *configurati
   this->rtspTeardownRequestMaximumCount = this->configurationParameters->GetValueLong(CONFIGURATION_RTSP_TEARDOWN_REQUEST_MAXIMUM_COUNT, true, RTSP_TEARDOWN_REQUEST_MAXIMUM_COUNT_DEFAULT);
   this->rtspTeardownRequestTimeout = this->configurationParameters->GetValueLong(CONFIGURATION_RTSP_TEARDOWN_REQUEST_TIMEOUT, true, RTSP_TEARDOWN_REQUEST_TIMEOUT_DEFAULT);
   this->openConnetionMaximumAttempts = this->configurationParameters->GetValueLong(CONFIGURATION_RTSP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS, true, RTSP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT);
+
+  this->rtspUdpPortRangeStart = (this->rtspUdpPortRangeStart <= 1024) ? RTSP_UDP_PORT_RANGE_START_DEFAULT : this->rtspUdpPortRangeStart;
+  this->rtspUdpPortRangeEnd = (this->rtspUdpPortRangeEnd < this->rtspUdpPortRangeStart) ? min(65535, this->rtspUdpPortRangeStart + 1000) : min(65535, this->rtspUdpPortRangeEnd);
+  this->rtspTeardownRequestMaximumCount = (this->rtspTeardownRequestMaximumCount <= 0) ? RTSP_TEARDOWN_REQUEST_MAXIMUM_COUNT_DEFAULT : this->rtspTeardownRequestMaximumCount;
+  this->receiveDataTimeout = (this->receiveDataTimeout < 0) ? RTSP_RECEIVE_DATA_TIMEOUT_DEFAULT : this->receiveDataTimeout;
+  this->rtspTeardownRequestTimeout = (this->rtspTeardownRequestTimeout < 0) ? RTSP_TEARDOWN_REQUEST_TIMEOUT_DEFAULT : this->rtspTeardownRequestTimeout;
+  this->openConnetionMaximumAttempts = (this->openConnetionMaximumAttempts < 0) ? RTSP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT : this->openConnetionMaximumAttempts;
 
   this->rtspScheduler = RtspTaskScheduler::createNew();
   this->rtspEnvironment = BasicUsageEnvironment::createNew(*this->rtspScheduler);

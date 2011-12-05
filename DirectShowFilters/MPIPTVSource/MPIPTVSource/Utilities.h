@@ -41,9 +41,12 @@ MPIPTVSOURCE_API TCHAR *GetTvServerFolder(void);
 MPIPTVSOURCE_API TCHAR *GetTvServerFilePath(const TCHAR *filePath);
 
 // get parameters from configuration file
+// @param logger : logger for logging purposes or NULL
+// @param moduleName : the name of module calling GetConfiguration(), ignored if logger is NULL
+// @param functionName : the name of function calling GetConfiguration(), ignored if logger is NULL
 // @param section : the section name from configuration file
 // @return : the collection of configuration parameters
-MPIPTVSOURCE_API CParameterCollection *GetConfiguration(const TCHAR *section);
+MPIPTVSOURCE_API CParameterCollection *GetConfiguration(CLogger *logger, const TCHAR *moduleName, const TCHAR *functionName, const TCHAR *section);
 
 // common implementation of FillBuffer() method
 // @param logger : logger for logging purposes

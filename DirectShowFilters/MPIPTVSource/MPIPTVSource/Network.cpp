@@ -1175,3 +1175,59 @@ MPIPTVSOURCE_API int GetDataFromSocket(CLogger *logger, const TCHAR *protocolNam
 
   return retval;
 }
+
+MPIPTVSOURCE_API int DumpInputPacket(GUID protocolInstance, unsigned int length, char *packet)
+{
+  int result = 0;
+
+  TCHAR *folder = GetTvServerFolder();
+  TCHAR *guid = ConvertGuidToString(protocolInstance);
+  if ((folder != NULL) && (guid != NULL) && (length > 0) && (packet != NULL))
+  {
+    TCHAR *lengthFileName = FormatString(_T("%slog\\mpiptv_input_dump_length_%s.ts"), folder, guid);
+    TCHAR *dumpFileName = FormatString(_T("%slog\\mpiptv_input_dump_%s.ts"), folder, guid);
+    if ((dumpFileName != NULL) && (lengthFileName != NULL))
+    {
+      // we have raw TS file path
+      FILE *dumpStream = NULL;
+      FILE *lengthStream = NULL;
+
+      result = _tfopen_s(&dumpStream, dumpFileName, _T("ab"));
+      if (result == 0)
+      {
+        result = _tfopen_s(&lengthStream, lengthFileName, _T("a"));
+        if (result == 0)
+        {
+          if (fwrite(packet, sizeof(char), length, dumpStream) != length)
+          {
+            result = -1;
+          }
+
+          if (_ftprintf(lengthStream, _T("%u\n"), length) < 0)
+          {
+            result = -1;
+          }
+
+          fclose(lengthStream);
+        }
+
+        fclose(dumpStream);
+      }
+    }
+    else
+    {
+      result = -1;
+    }
+    FREE_MEM(lengthFileName);
+    FREE_MEM(dumpFileName);
+  }
+  else
+  {
+    result = -1;
+  }
+
+  FREE_MEM(folder);
+  FREE_MEM(guid);
+
+  return result;
+}

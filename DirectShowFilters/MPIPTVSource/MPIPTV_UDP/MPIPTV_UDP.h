@@ -105,6 +105,9 @@ protected:
   // holds receive data timeout
   unsigned int receiveDataTimeout;
 
+  // specifies if input packets have to be dumped to file
+  bool dumpInputPackets;
+
   // chains of ADDRINFO structures for remote and local server
   ADDRINFOT *local;
   ADDRINFOT *source;

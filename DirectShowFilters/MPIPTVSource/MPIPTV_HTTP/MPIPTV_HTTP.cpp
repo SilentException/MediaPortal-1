@@ -102,10 +102,18 @@ int CMPIPTV_HTTP::Initialize(HANDLE lockMutex, CParameterCollection *configurati
   long iptvBufferSize = this->configurationParameters->GetValueLong(CONFIGURATION_IPTV_BUFFER_SIZE, true, IPTV_BUFFER_SIZE_DEFAULT);
   long defaultMultiplier = this->configurationParameters->GetValueLong(CONFIGURATION_HTTP_INTERNAL_BUFFER_MULTIPLIER, true, HTTP_INTERNAL_BUFFER_MULTIPLIER_DEFAULT);
   long maxMultiplier = this->configurationParameters->GetValueLong(CONFIGURATION_HTTP_INTERNAL_BUFFER_MAX_MULTIPLIER, true, HTTP_INTERNAL_BUFFER_MAX_MULTIPLIER_DEFAULT);
-  this->defaultBufferSize = defaultMultiplier * iptvBufferSize;
-  this->maxBufferSize = maxMultiplier * iptvBufferSize;
   this->receiveDataTimeout = this->configurationParameters->GetValueLong(CONFIGURATION_HTTP_RECEIVE_DATA_TIMEOUT, true, HTTP_RECEIVE_DATA_TIMEOUT_DEFAULT);
   this->openConnetionMaximumAttempts = this->configurationParameters->GetValueLong(CONFIGURATION_HTTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS, true, HTTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT);
+  this->dumpInputPackets = this->configurationParameters->GetValueBool(CONFIGURATION_DUMP_INPUT_PACKETS, true, DUMP_INPUT_PACKETS_DEFAULT);
+
+  iptvBufferSize = (iptvBufferSize <= 0) ? IPTV_BUFFER_SIZE_DEFAULT : iptvBufferSize;
+  defaultMultiplier = (defaultMultiplier <= 0) ? HTTP_INTERNAL_BUFFER_MULTIPLIER_DEFAULT : defaultMultiplier;
+  maxMultiplier = (maxMultiplier < defaultMultiplier) ? defaultMultiplier : maxMultiplier;
+  this->receiveDataTimeout = (this->receiveDataTimeout < 0) ? HTTP_RECEIVE_DATA_TIMEOUT_DEFAULT : this->receiveDataTimeout;
+  this->openConnetionMaximumAttempts = (this->openConnetionMaximumAttempts < 0) ? HTTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS_DEFAULT : this->openConnetionMaximumAttempts;
+
+  this->defaultBufferSize = defaultMultiplier * iptvBufferSize;
+  this->maxBufferSize = maxMultiplier * iptvBufferSize;
 
   this->lockMutex = lockMutex;
   if (this->lockMutex == NULL)
@@ -629,6 +637,11 @@ void CMPIPTV_HTTP::ReceiveData(bool *shouldExit)
       else
       {
         this->logger.Log(LOGGER_DATA, _T("%s: %s: bytes received: %i"), PROTOCOL_IMPLEMENTATION_NAME, METHOD_RECEIVE_DATA_NAME, length);
+
+        if (this->dumpInputPackets)
+        {
+          DumpInputPacket(this->GetInstanceId(), length, this->receiveBuffer);
+        }
 
         // parse HTTP response
         // set end of string
