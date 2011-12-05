@@ -55,7 +55,6 @@ public:
   void SetStart(CRefTime rtStartTime);
   bool IsConnected();
   void SetDiscontinuity(bool onOff);
-  bool m_EnableSlowMotionOnZapping ;
   LONGLONG m_sampleDuration;
   DWORD    m_sampleSleepTime;
 

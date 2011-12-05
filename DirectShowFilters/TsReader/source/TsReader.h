@@ -34,7 +34,7 @@
 #include <map>
 
 #define INIT_SHOWBUFFERVIDEO 20
-#define INIT_SHOWBUFFERAUDIO 5
+#define INIT_SHOWBUFFERAUDIO 10
 
 using namespace std;
 
@@ -214,7 +214,7 @@ public:
 
   CLSID           m_videoDecoderCLSID;
   bool            m_bFastSyncFFDShow;
-  bool            m_bFastSyncVideo;
+  bool            m_EnableSlowMotionOnZapping;
 
   CLSID           GetCLSIDFromPin(IPin* pPin);
 

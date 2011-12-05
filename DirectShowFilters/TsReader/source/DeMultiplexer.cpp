@@ -633,8 +633,7 @@ CBuffer* CDeMultiplexer::GetAudio()
       if (!m_bFrame0Found) return NULL ;
       if (m_LastVideoSample.Millisecs() - m_FirstVideoSample.Millisecs() < 310) return NULL ;   // Not enough video to start.
       
-      //if (!m_filter.GetAudioPin()->m_EnableSlowMotionOnZapping || !m_filter.m_bLiveTv)
-      if (!m_filter.GetAudioPin()->m_EnableSlowMotionOnZapping)
+      if (!m_filter.m_EnableSlowMotionOnZapping)
       {
         if (m_LastAudioSample.Millisecs() - m_FirstVideoSample.Millisecs() < 10) return NULL ;   // Not enough simultaneous audio & video to start.
       }       

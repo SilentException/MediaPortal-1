@@ -171,7 +171,7 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   GetLogFile(filename);
   ::DeleteFile(filename);
   LogDebug("--- Buffer-empty rate control testing ----");
-  LogDebug("---------- v0.0.34 XXX -------------------");
+  LogDebug("---------- v0.0.35 XXX -------------------");
 
   m_fileReader=NULL;
   m_fileDuration=NULL;
@@ -202,12 +202,12 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   if(!DoNotAllowSlowMotionDuringZapping())
   {
     LogDebug("Slow motion video allowed during zapping");
-    m_pAudioPin->m_EnableSlowMotionOnZapping = true;
+    m_EnableSlowMotionOnZapping = true;
   }
   else
   {
     LogDebug("No slow motion video allowed during zapping");
-    m_pAudioPin->m_EnableSlowMotionOnZapping = false;
+    m_EnableSlowMotionOnZapping = false;
   }
   
   LogDebug("Wait for seeking to eof - false - constructor");
@@ -226,7 +226,6 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   m_bSeekAfterRcDone=false ;
   m_videoDecoderCLSID=GUID_NULL;
   m_bFastSyncFFDShow=false;
-  m_bFastSyncVideo=false;
   m_ShowBufferAudio = INIT_SHOWBUFFERAUDIO;
   m_ShowBufferVideo = INIT_SHOWBUFFERVIDEO;
   m_lastPause = timeGetTime();

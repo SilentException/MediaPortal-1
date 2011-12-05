@@ -267,7 +267,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
               if (lastAudio.Millisecs() - 500 < firstVideo.Millisecs()) //Less than 500ms A/V overlap
               {
                 BestCompensation = lastAudio - (500*10000) - m_pTsReaderFilter->m_RandomCompensation - m_rtStart ;
-                AddVideoCompensation = ( firstVideo - lastAudio + (500*10000) ) ;
+                AddVideoCompensation = ( firstVideo - lastAudio + (200*10000) ) ; //Do not fully compensate video - helps with smooth startup
                 LogDebug("Compensation : ( Rnd : %d mS ) Audio pts greatly ahead Video pts . Add %03.3f sec of extra video comp to start now !...( real time TV )",(DWORD)m_pTsReaderFilter->m_RandomCompensation/10000,(float)AddVideoCompensation.Millisecs()/1000.0f) ;
               }
               else
@@ -283,7 +283,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
               AddVideoCompensation = 0 ;
               LogDebug("Compensation : Audio pts behind Video Pts ( Recover skipping Video ) ....") ;
             }
-            m_pTsReaderFilter->m_RandomCompensation += 500000 ;   // Stupid feature required to have FFRW working with DVXA ( at least ATI.. ) to avoid frozen picture. ( it moves just moves the sample time a bit !! )
+            m_pTsReaderFilter->m_RandomCompensation += 500000 ;   // Stupid feature required to have FFRW working with DVXA ( at least ATI.. ) to avoid frozen picture. ( it just moves the sample time a bit !! )
             m_pTsReaderFilter->m_RandomCompensation = m_pTsReaderFilter->m_RandomCompensation % 1000000 ;
           }
           else
@@ -316,7 +316,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           CRefTime compTemp;
           compTemp.m_time=(BestCompensation.m_time - m_pTsReaderFilter->m_ClockOnStart.m_time) - PRESENT_DELAY ;
           m_pTsReaderFilter->SetCompensation(compTemp);
-          m_pTsReaderFilter->AddVideoComp=AddVideoCompensation ;
+          m_pTsReaderFilter->AddVideoComp = AddVideoCompensation;
 
           LogDebug("aud:Compensation:%03.3f, Clock on start %03.3f m_rtStart:%d ",(float)m_pTsReaderFilter->Compensation.Millisecs()/1000.0f, m_pTsReaderFilter->m_ClockOnStart.Millisecs()/1000.0f, m_rtStart.Millisecs());
 
@@ -341,6 +341,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
         bool HasTimestamp ;
         double fTime = 0.0;
         double clock = 0.0;
+        double stallPoint = 0.2;
         //check if it has a timestamp
         if ((HasTimestamp=buffer->MediaTime(RefTime)))
         {
@@ -357,18 +358,11 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           //Discard late samples at start of play,
           //and samples outside a sensible timing window during play 
           //(helps with signal corruption recovery)
-          if ((cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) && (fTime > -0.2) && (fTime < 2.0))
+          if ((cRefTime.m_time >= m_pTsReaderFilter->m_ClockOnStart) && (fTime > -0.5) && (fTime < 2.0))
           {
-            double stallPoint;
-            if (m_nNextASD < 200)
-            {
-              //Slowly increase stall point threshold from start (1 ms per sample)
-              stallPoint = 0.2 + ((double)m_nNextASD * 0.001);
-            }
-            else
-            {
-              stallPoint = 0.5;
-            }
+            //Slowly increase stall point threshold over the first 8 seconds of play
+            //to allow audio renderer buffer to build up to 0.4s
+            stallPoint = min(0.4, (0.2 + (((double)(cRefTime.m_time - m_pTsReaderFilter->m_ClockOnStart))/400000000.0)));
             if (fTime > stallPoint)
             {
               //Too early - stall to avoid over-filling of audio decode/renderer buffers
@@ -416,7 +410,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
             {
               if (m_pTsReaderFilter->m_ShowBufferAudio || fTime < 0.030)
               {
-                LogDebug("Aud/Ref : %03.3f, Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, Sleep %d ms", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State(), sampSleepTime);
+                LogDebug("Aud/Ref : %03.3f, Compensated = %03.3f ( %0.3f A/V buffers=%02d/%02d), Clk : %f, State %d, Sleep %d ms, stallPt %03.3f", (float)RefTime.Millisecs()/1000.0f, (float)cRefTime.Millisecs()/1000.0f, fTime,cntA,cntV, clock, m_pTsReaderFilter->State(), sampSleepTime, (float)stallPoint);
               }
               if (m_pTsReaderFilter->m_ShowBufferAudio) m_pTsReaderFilter->m_ShowBufferAudio--;
             }
