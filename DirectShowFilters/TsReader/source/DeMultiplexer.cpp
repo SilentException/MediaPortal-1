@@ -78,6 +78,7 @@ CDeMultiplexer::CDeMultiplexer(CTsDuration& duration,CTsReaderFilter& filter)
   m_iAudioIdx = -1;
   m_iPatVersion = -1;
   m_ReqPatVersion = -1;
+  m_bWaitGoodPat = false;
   m_receivedPackets = 0;
   m_bSetAudioDiscontinuity = false;
   m_bSetVideoDiscontinuity = false;
@@ -688,6 +689,7 @@ void CDeMultiplexer::Start()
   m_bHoldVideo=false;
   m_iPatVersion=-1;
   m_ReqPatVersion=-1;
+  m_bWaitGoodPat = false;
   m_bSetAudioDiscontinuity=false;
   m_bSetVideoDiscontinuity=false;
   m_bReadAheadFromFile = false;
@@ -876,14 +878,14 @@ void CDeMultiplexer::OnTsPacket(byte* tsPacket)
 
   m_patParser.OnTsPacket(tsPacket);
 
-  if (m_iPatVersion==-1)
+  if ((m_iPatVersion==-1) || m_bWaitGoodPat)
   {
-    // First Pat not found
+    // First PAT not found or waiting for correct PAT
     return;
   }
 
   // Wait for new PAT if required.
-  if ((m_iPatVersion & 0x0F) != (m_ReqPatVersion & 0x0F))
+  if ((m_iPatVersion & 0x0F) != (m_ReqPatVersion & 0x0F)) //No PAT yet, or PAT version doesn't match requested e.g. PAT data from old channel
   {
     if (m_ReqPatVersion==-1)                    
     {                                     // Now, unless channel change, 
@@ -2055,13 +2057,39 @@ void CDeMultiplexer::OnNewChannel(CChannelInfo& info)
 
   if (info.PatVersion != m_iPatVersion)
   {
-    LogDebug("OnNewChannel pat version:%d->%d",m_iPatVersion, info.PatVersion);
-    if (m_filter.m_bLiveTv && ((m_ReqPatVersion & 0x0F) != (info.PatVersion & 0x0F)) && (m_iPatVersion!=-1))
+    if (!m_bWaitGoodPat)
     {
-      LogDebug("Unexpected LiveTV PAT change due to provider, update m_ReqPatVersion to new PAT version : %d",m_ReqPatVersion);
-      // Unexpected LiveTV PAT change due to provider.
-      m_ReqPatVersion = info.PatVersion ;
+      LogDebug("OnNewChannel: PAT change detected: %d->%d",m_iPatVersion, info.PatVersion);
     }
+    
+    if (m_filter.m_bLiveTv && (m_iPatVersion!=-1)) //Live TV channel change only
+    {
+      DWORD timeTemp = timeGetTime();
+      int PatReqDiff = (info.PatVersion & 0x0F) - (m_ReqPatVersion & 0x0F);
+      int PatIDiff = (info.PatVersion & 0x0F) - (m_iPatVersion & 0x0F);
+      
+      if (!((PatIDiff == 1) || (PatIDiff == -15) || (PatReqDiff == 0))) //Not (PAT version incremented by 1 || expected PAT)
+      {      
+        //Skipped back in timeshift file or possible RTSP seek accuracy problem ?
+        if (!m_bWaitGoodPat)
+        {
+          m_bWaitGoodPat = true;
+          m_WaitGoodPatTmo = timeTemp + 1200;   // Set timeout to 1.2 sec
+          LogDebug("OnNewChannel: wait for good PAT");
+          return; // wait a while for correct PAT version to arrive
+        }
+        if ((timeTemp < m_WaitGoodPatTmo) && m_bWaitGoodPat)
+        {
+          return; // wait for correct PAT version
+        }
+        LogDebug("OnNewChannel: 'Wait for good PAT' timeout, allow PAT update");
+      }
+      
+      m_ReqPatVersion = info.PatVersion ;
+      LogDebug("OnNewChannel: found good PAT: %d", info.PatVersion);
+    }
+    
+    m_bWaitGoodPat = false;
     m_iPatVersion=info.PatVersion;
     m_bSetAudioDiscontinuity=true;
     m_bSetVideoDiscontinuity=true;

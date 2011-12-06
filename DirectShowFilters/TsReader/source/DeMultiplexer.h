@@ -225,6 +225,8 @@ private:
   int m_iPatVersion;
   int m_ReqPatVersion;
   DWORD m_WaitNewPatTmo;
+  DWORD m_WaitGoodPatTmo;
+  bool m_bWaitGoodPat;
   int m_receivedPackets;
 
   bool m_bFirstGopFound;
