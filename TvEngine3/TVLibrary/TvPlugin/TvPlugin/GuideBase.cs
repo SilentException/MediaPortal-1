@@ -30,7 +30,7 @@ using TvDatabase;
 
 namespace TvPlugin
 {
-  public abstract class GuideBase : GUIDialogWindow
+  public abstract class GuideBase : GUIWindow
   {
     protected int _previousChannelCount = 0;    
     protected const int MaxDaysInGuide = 30;
@@ -90,7 +90,7 @@ namespace TvPlugin
 
         // Find first day in TVGuide and set spincontrol position
         int iDay = CalcDays();
-        for (; iDay < 0; ++iDay)
+        for (; iDay < -1; ++iDay)
         {
           _viewingTime = _viewingTime.AddDays(1.0);
         }
@@ -98,7 +98,7 @@ namespace TvPlugin
         {
           _viewingTime = _viewingTime.AddDays(-1.0);
         }
-        cntlDay.Value = iDay;
+        cntlDay.Value = iDay + 1;
 
         int xpos, ypos;
         GUIControl cntlPanel = GetControl((int)Controls.PANEL_BACKGROUND);

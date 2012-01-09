@@ -776,8 +776,8 @@ namespace TvPlugin
               {
                 DateTime dtNow = DateTime.Now;
                 cntlDay.Reset();
-                cntlDay.SetRange(0, MaxDaysInGuide - 1);
-                for (int iDay = 0; iDay < MaxDaysInGuide; iDay++)
+                cntlDay.SetRange(0, MaxDaysInGuide);
+                for (int iDay = -1; iDay < MaxDaysInGuide; iDay++)
                 {
                   DateTime dtTemp = dtNow.AddDays(iDay);
                   string day;
@@ -806,7 +806,7 @@ namespace TvPlugin
                       break;
                   }
                   day = String.Format("{0} {1}-{2}", day, dtTemp.Day, dtTemp.Month);
-                  cntlDay.AddLabel(day, iDay);
+                  cntlDay.AddLabel(day, iDay + 1);
                 }
               }
               else
@@ -860,7 +860,7 @@ namespace TvPlugin
               _viewingTime = DateTime.Now;
               _viewingTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, _viewingTime.Hour,
                                           _viewingTime.Minute, 0, 0);
-              _viewingTime = _viewingTime.AddDays(iDay);
+              _viewingTime = _viewingTime.AddDays(iDay - 1);
               _recalculateProgramOffset = true;
               Update(false);
               SetFocus();
@@ -966,13 +966,13 @@ namespace TvPlugin
           DateTime dateNow = DateTime.Now.Date;
           DateTime datePrev = _viewingTime.Date;
           TimeSpan ts = dateNow - datePrev;
-          if (ts.TotalDays == 1)
+          if (ts.TotalDays > 1)
           {
             _viewingTime = DateTime.Now;
           }
 
 
-          if (_viewingTime.Date.Equals(DateTime.Now.Date) && _viewingTime < DateTime.Now)
+          if (/*_viewingTime.Date.Equals(DateTime.Now.Date) &&*/ _viewingTime < DateTime.Now)
           {
             int iStartX = GetControl((int)Controls.LABEL_TIME1).XPosition;
             int iWidth = GetControl((int)Controls.LABEL_TIME1 + 1).XPosition - iStartX;
@@ -1379,7 +1379,7 @@ namespace TvPlugin
 
           // Find first day in TVGuide and set spincontrol position
           int iDay = CalcDays();
-          for (; iDay < 0; ++iDay)
+          for (; iDay < -1; ++iDay)
           {
             _viewingTime = _viewingTime.AddDays(1.0);
           }
@@ -1387,7 +1387,7 @@ namespace TvPlugin
           {
             _viewingTime = _viewingTime.AddDays(-1.0);
           }
-          cntlDay.Value = iDay;
+          cntlDay.Value = iDay + 1;
         }
       }
       // ichan = number of rows
@@ -2798,7 +2798,7 @@ namespace TvPlugin
         _viewingTime = _viewingTime.AddMinutes(-_timePerBlock);
         // Check new day
         int iDay = CalcDays();
-        if (iDay < 0)
+        if (iDay < -1)
         {
           _viewingTime = _viewingTime.AddMinutes(+_timePerBlock);
         }
