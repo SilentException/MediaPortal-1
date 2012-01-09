@@ -261,6 +261,9 @@ ShowUninstDetails show
   
   ; MovieThumbnailer
   ${KillProcess} "mtn.exe"
+
+  ; ffmpeg
+  ${KillProcess} "ffmpeg.exe"
 !macroend
 
 !macro RenameInstallDirectory
@@ -378,6 +381,8 @@ Section "MediaPortal core files (required)" SecCore
   File /nonfatal /r /x .git "${MEDIAPORTAL.BASE}\defaults\*"
   SetOutPath "$MPdir.Base\MovieThumbnailer"
   File /nonfatal /r /x .git "${MEDIAPORTAL.BASE}\MovieThumbnailer\*"
+  SetOutPath "$MPdir.Base\FFmpeg"
+  File /nonfatal /r /x .svn "${MEDIAPORTAL.BASE}\FFmpeg\*"
   SetOutPath "$MPdir.Base\MusicPlayer"
   File /nonfatal /r /x .git "${MEDIAPORTAL.BASE}\MusicPlayer\*"
   SetOutPath "$MPdir.Base\Profiles"

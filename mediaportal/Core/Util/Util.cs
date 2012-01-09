@@ -726,10 +726,13 @@ namespace MediaPortal.Util
       GUIListItem item = (GUIListItem)i;
       string path = item.Path;
       string strThumb = String.Format(@"{0}\{1}.jpg", Thumbs.Videos, EncryptLine(path));
+
+      /*
       if (FileExistsInCache(strThumb))
       {
         return;
       }
+      */
 
       // Do not try to create thumbnails for DVDs
       if (path.Contains("VIDEO_TS\\VIDEO_TS.IFO"))
@@ -737,13 +740,22 @@ namespace MediaPortal.Util
         return;
       }
 
+      /*
       IVideoThumbBlacklist blacklist = GlobalServiceProvider.Get<IVideoThumbBlacklist>();
       if (blacklist != null && blacklist.Contains(path))
       {
         Log.Debug("Skipped creating thumbnail for {0}, it has been blacklisted because last attempt failed", path);
         return;
       }
+      */
 
+      bool success = VideoThumbCreator.CreateVideoThumb(path, strThumb, true, false);
+      if (success)
+      {
+        SetThumbnails(ref item);
+      }
+
+      /*
       Image thumb = null;
       try
       {
@@ -797,6 +809,7 @@ namespace MediaPortal.Util
           blacklist.Add(path);
         }
       }
+      */
     }
 
     public static void CheckThumbExtractorVersion()
@@ -808,8 +821,8 @@ namespace MediaPortal.Util
           if (!xmlreader.GetValueAsBool("thumbnails", "tvrecordedondemand", true))
             return;
 
-          string lastVersion = xmlreader.GetValueAsString("thumbnails", "extractorversion", "");
-          string newVersion = VideoThumbCreator.GetThumbExtractorVersion();
+          string lastVersion = xmlreader.GetValueAsString("thumbnails", "extractormtnversion", "");
+          string newVersion = VideoThumbCreator.GetThumbExtractorVersion(1);
           if (newVersion != lastVersion)
           {
             IVideoThumbBlacklist blacklist = GlobalServiceProvider.Get<IVideoThumbBlacklist>();
@@ -817,7 +830,17 @@ namespace MediaPortal.Util
             {
               blacklist.Clear();
             }
-            xmlreader.SetValue("thumbnails", "extractorversion", newVersion);
+            xmlreader.SetValue("thumbnails", "extractormtnversion", newVersion);
+          }
+
+          lastVersion = xmlreader.GetValueAsString("thumbnails", "extractorffmpegversion", "");
+          newVersion = VideoThumbCreator.GetThumbExtractorVersion(2);
+          if (newVersion != lastVersion) {
+              IVideoThumbBlacklist blacklist = GlobalServiceProvider.Get<IVideoThumbBlacklist>();
+              if (blacklist != null) {
+                  blacklist.Clear();
+              }
+              xmlreader.SetValue("thumbnails", "extractorffmpegversion", newVersion);
           }
         }
       }
