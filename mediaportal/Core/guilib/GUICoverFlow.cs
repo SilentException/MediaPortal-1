@@ -537,6 +537,7 @@ namespace MediaPortal.GUI.Library
           {
             int id;
             bool focus;
+            bool returnClick = true;
             if (_horizontalScrollbar != null)
             {
               if (_horizontalScrollbar.HitTest((int)action.fAmount1, (int)action.fAmount2, out id, out focus))
@@ -549,9 +550,16 @@ namespace MediaPortal.GUI.Library
                 _horizontalScrollbar.OnAction(action);
                 int index = (int)((_horizontalScrollbar.Percentage / 100.0f) * _listItems.Count);
                 SelectCardIndex(index);
+                returnClick = false;
 
                 GUIGraphicsContext.MouseSupport = ms;
               }
+            }
+            if (action.wID == Action.ActionType.ACTION_MOUSE_CLICK && returnClick == true)
+            {
+              GUIMessage msg = new GUIMessage(GUIMessage.MessageType.GUI_MSG_CLICKED, WindowId, GetID, ParentID,
+                                              (int)Action.ActionType.ACTION_SELECT_ITEM, 0, null);
+              GUIGraphicsContext.SendMessage(msg);
             }
           }
           break;
