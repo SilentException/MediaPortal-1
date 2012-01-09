@@ -108,8 +108,11 @@ namespace MediaPortal.Visualization
         {
           stream = (int)Bass.GetCurrentVizStream();
         }
-
-        BassVis.BASSVIS_SONIQUEVIS_RenderToDC(BASSVISKind.BASSVISKIND_SONIQUE, (IntPtr)_visParam.VisHandle, stream, hdc);
+        // @Helmut! Deine letzte Function die du verwendet hast hat immer über das Device gerendert
+        // Diese Function hier sollte ersetzt werden mit BASSVIS_SONIQUEVIS_RenderStreamToDC
+        // Schaue dir bitte dafür das Sample von VS2010 an wie ich das dort gehandhabt habe.
+        // Ich weiss nicht wo ich es hier einsetzen soll sonst hätte ich es selbst gemacht! (Sorry)
+        BassVis.BASSVIS_SONIQUEVIS_RenderDeviceToDC(BASSVISKind.BASSVISKIND_SONIQUE, (IntPtr)_visParam.VisHandle, stream, hdc);
       }
 
       catch (Exception) {}
@@ -181,10 +184,18 @@ namespace MediaPortal.Visualization
 
       if (_visParam.VisHandle != 0)
       {
-        try
-        {
-          BassVis.BASSVIS_Free(_visParam, ref _baseVisParam);
-        }
+         try
+         {
+          int counter = 0;
+
+          bool bFree = BassVis.BASSVIS_Free(_visParam);
+          while ((!bFree) && (counter <= 250))
+          {
+            bFree = BassVis.BASSVIS_IsFree(_visParam);
+            System.Windows.Forms.Application.DoEvents();
+            counter++;
+          }
+         }
         catch (AccessViolationException) {}
 
         _visParam.VisHandle = 0;

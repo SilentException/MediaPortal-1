@@ -25,6 +25,7 @@ using MediaPortal.GUI.Library;
 using MediaPortal.Player;
 using MediaPortal.TagReader;
 using MediaPortal.Util;
+using MediaPortal.Playlists;
 using BassVis_Api;
 
 namespace MediaPortal.Visualization
@@ -34,14 +35,17 @@ namespace MediaPortal.Visualization
     #region Variables
 
     private BASSVIS_INFO _mediaInfo = null;
+    private BassVis.BASSVISSTATE _VisCallback;
 
     private bool RenderStarted = false;
     private bool firstRun = true;
 
     private IntPtr hwndChild; // Handle to the Winamp Child Window.
-
+    private BASSVIS_PARAM _tmpVisParam = null;
     private MusicTag trackTag = null;
     private string _songTitle = "   "; // Title of the song played
+    private int _playlistTitlePos;
+    private PlayListPlayer PlaylistPlayer = null;
 
     #endregion
 
@@ -128,6 +132,29 @@ namespace MediaPortal.Visualization
 
     #endregion
 
+    #region BASSVIS_StateCallback()
+
+    public void BASSVIS_StateCallback(BASSVIS_PLAYSTATE NewState)
+    {
+        //CallBack PlayState for Winamp only
+        switch (NewState)
+        {
+
+            case BASSVIS_PLAYSTATE.SetPlaylistTitle:
+
+                  BassVis.BASSVIS_SetPlayState(_visParam, BASSVIS_PLAYSTATE.SetPlaylistTitle, -1, _songTitle);
+
+                break;
+            case BASSVIS_PLAYSTATE.GetPlaylistTitlePos:
+
+                _playlistTitlePos = BassVis.BASSVIS_SetPlayState(_visParam, BASSVIS_PLAYSTATE.GetPlaylistTitlePos);
+                break;
+
+        }
+    }
+
+    #endregion BASSVIS_StateCallback()
+
     #region <Base class> Overloads
 
     public override bool InitializePreview()
@@ -155,10 +182,13 @@ namespace MediaPortal.Visualization
         // Set Song information, so that the plugin can display it
         if (trackTag != null && Bass != null)
         {
+          PlaylistPlayer = PlayListPlayer.SingletonPlayer;
+          PlayListItem curPlaylistItem = PlaylistPlayer.GetCurrentItem();
+
           _mediaInfo.Position = (int)Bass.CurrentPosition;
           _mediaInfo.Duration = (int)Bass.Duration;
           _mediaInfo.PlaylistLen = 1;
-          _mediaInfo.PlaylistPos = 1;
+          _mediaInfo.PlaylistPos = 1; //PlaylistPlayer.currentItem;
         }
         else
         {
@@ -209,9 +239,18 @@ namespace MediaPortal.Visualization
       if (_visParam.VisHandle != 0)
       {
         BassVis.BASSVIS_SetPlayState(_visParam, BASSVIS_PLAYSTATE.Stop);
-        BassVis.BASSVIS_Free(_visParam, ref _baseVisParam);
-        _visParam.VisHandle = 0;
-      }
+        
+        int counter = 0;
+
+        bool bFree = BassVis.BASSVIS_Free(_visParam);
+        while ((!bFree) && (counter <= 250))
+        {
+          bFree = BassVis.BASSVIS_IsFree(_visParam);
+          System.Windows.Forms.Application.DoEvents();
+          counter++;
+        }
+         _visParam.VisHandle = 0;
+       }
 
       int tmpVis = BassVis.BASSVIS_GetPluginHandle(BASSVISKind.BASSVISKIND_WINAMP, VizPluginInfo.FilePath);
       if (tmpVis != 0)
@@ -246,12 +285,18 @@ namespace MediaPortal.Visualization
       // Do a move of the Winamp Viz
       if (_visParam.VisHandle != 0)
       {
-        hwndChild = Win32API.GetWindow(VisualizationWindow.Handle, Win32API.ShowWindowFlags.Show);
+        // hwndChild same as VisualizationWindow.Handle ??
+        // i think that can be remove or ?
+        hwndChild = Win32API.GetWindow(VisualizationWindow.Handle, Win32API.ShowWindowFlags.Hide);
         if (hwndChild != IntPtr.Zero)
         {
-          Win32API.MoveWindow(hwndChild, 0, 0, newSize.Width, newSize.Height, true);
+          // Should be Hide so do not see VisualizationWindow when moved to Screen
+          Win32API.ShowWindow(hwndChild, Win32API.ShowWindowFlags.Hide);
+          _tmpVisParam = new BASSVIS_PARAM(BASSVISKind.BASSVISKIND_WINAMP);
+          _tmpVisParam.VisGenWinHandle = hwndChild;
+          BassVis.BASSVIS_Resize(_tmpVisParam, 0, 0, newSize.Width, newSize.Height);
         }
-      }
+      } 
       return true;
     }
 
@@ -281,11 +326,21 @@ namespace MediaPortal.Visualization
 
       if (_visParam.VisHandle != 0)
       {
-        BassVis.BASSVIS_Free(_visParam, ref _baseVisParam);
-        _visParam.VisHandle = 0;
-        RenderStarted = false;
+          RenderStarted = false;
+
+          int counter = 0;
+
+          bool bFree = BassVis.BASSVIS_Free(_visParam);
+          while ((!bFree) && (counter <= 250))
+          {
+              bFree = BassVis.BASSVIS_IsFree(_visParam);
+              System.Windows.Forms.Application.DoEvents();
+              counter++;
+          }
       }
 
+/*      
+      // Hat keine Funktion bringt also nichts Daten sind solange leer bis sie gefüllt werden
       // Set Dummy Information for the plugin, before creating it
       _mediaInfo.SongTitle = "";
       _mediaInfo.SongFile = "";
@@ -294,23 +349,32 @@ namespace MediaPortal.Visualization
       _mediaInfo.PlaylistPos = 0;
       _mediaInfo.PlaylistLen = 0;
       BassVis.BASSVIS_SetInfo(_visParam, _mediaInfo);
-
+*/
       try
       {
         // Create the Visualisation
-        BASSVIS_EXEC visExec = new BASSVIS_EXEC(VizPluginInfo.FilePath);
+          
+        //Remove CallBack this do nothing is Callbackstate NULL
+        BassVis.BASSVIS_WINAMPRemoveCallback();
+
+          BASSVIS_EXEC visExec = new BASSVIS_EXEC(VizPluginInfo.FilePath);
         visExec.AMP_ModuleIndex = VizPluginInfo.PresetIndex;
         visExec.AMP_UseOwnW1 = 1;
         visExec.AMP_UseOwnW2 = 1;
         BassVis.BASSVIS_ExecutePlugin(visExec, _visParam);
-        if (_visParam.VisGenWinHandle != IntPtr.Zero)
+        if (_visParam.VisHandle != 0)
         {
+/*
           hwndChild = Win32API.GetWindow(VisualizationWindow.Handle, Win32API.ShowWindowFlags.Show);
           if (hwndChild != IntPtr.Zero)
           {
             Win32API.MoveWindow(hwndChild, 0, 0, VisualizationWindow.Width, VisualizationWindow.Height, true);
           }
+*/          
+          BassVis.BASSVIS_SetPlayState(_visParam, BASSVIS_PLAYSTATE.Play);
 
+          // BASSVIS_SetVisPort set the visualization window that was taken over BASSVIS_ExecutePlugin
+          // as a parent in your Container Window and move it over MoveWindow on the right position
           BassVis.BASSVIS_SetVisPort(_visParam,
                                      _visParam.VisGenWinHandle,
                                      VisualizationWindow.Handle,
@@ -319,9 +383,12 @@ namespace MediaPortal.Visualization
                                      VisualizationWindow.Width,
                                      VisualizationWindow.Height);
 
-          BassVis.BASSVIS_SetPlayState(_visParam, BASSVIS_PLAYSTATE.Play);
+          //SetCallBack for PlayState or nothing work correctly
+          _VisCallback = BASSVIS_StateCallback;
+          BassVis.BASSVIS_WINAMPSetStateCallback(_VisCallback);
+          BassVis.BASSVIS_SetOption(_visParam, BASSVIS_CONFIGFLAGS.BASSVIS_CONFIG_FFTAMP, 128);
         }
-        else
+/*         else
         {
           BassVis.BASSVIS_SetVisPort(_visParam,
                                      _visParam.VisGenWinHandle,
@@ -330,8 +397,9 @@ namespace MediaPortal.Visualization
                                      0,
                                      0,
                                      0);
-        }
 
+        }
+*/
         // The Winamp Plugin has stolen focus on the MP window. Bring it back to froeground
         Win32API.SetForegroundWindow(GUIGraphicsContext.form.Handle);
 

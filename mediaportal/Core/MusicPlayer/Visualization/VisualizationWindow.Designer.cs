@@ -17,6 +17,9 @@ namespace MediaPortal.Visualization
             {
                 components.Dispose();
             }
+            // Should be set for RunRenderThread
+            // or error appears while Dispose
+            VisualizationRunning = false;
             base.Dispose(disposing);
         }
 
