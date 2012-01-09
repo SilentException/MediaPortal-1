@@ -23,6 +23,8 @@
 #include "MPIPTVSourceStream.h"
 #include "ProtocolInterface.h"
 #include "Utilities.h"
+#include "PatParser.h"
+#include "PmtParser.h"
 
 #include <Shlwapi.h>
 #include <ShlObj.h>
@@ -59,6 +61,11 @@ CMPIPTVSourceStream::CMPIPTVSourceStream(HRESULT *phr, CSource *pFilter, CParame
   this->configuration->LogCollection(&this->logger, LOGGER_VERBOSE, MODULE_NAME, METHOD_CONSTRUCTOR_NAME);
   this->dumpRawTS = this->configuration->GetValueBool(CONFIGURATION_DUMP_RAW_TS, true, DUMP_RAW_TS_DEFAULT);
   this->analyzeDiscontinuity = this->configuration->GetValueBool(CONFIGURATION_ANALYZE_DISCONTINUITY, true, ANALYZE_DISCONTINUITY_DEFAULT);
+  this->canChangeSidAndPid = true;
+  this->newPid = PID_DEFAULT;
+  this->newSid = SID_DEFAULT;
+  this->oldPid = PID_DEFAULT;
+  this->oldSid = SID_DEFAULT;
 
   this->protocolImplementations = NULL;
   this->dllTotal = 0;
@@ -460,6 +467,161 @@ HRESULT CMPIPTVSourceStream::FillBuffer(IMediaSample *pSamp)
     if (this->activeProtocol != NULL)
     {
       unsigned int postedData = this->activeProtocol->FillBuffer(pSamp, pData, cbData);
+
+      if ((postedData > 0) && (this->canChangeSidAndPid) && (this->newSid != SID_DEFAULT) && (this->newPid != PID_DEFAULT))
+      {
+        unsigned int expectedSize = (postedData / DVB_PACKET_SIZE) * DVB_PACKET_SIZE;
+        if (expectedSize != postedData)
+        {
+          this->logger.Log(LOGGER_WARNING, _T("%s: %s: expected size %u and posted size %u are not same, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME, expectedSize, postedData);
+          this->canChangeSidAndPid = false;
+        }
+        else
+        {
+          for(unsigned int i = 0; (i < ((postedData / DVB_PACKET_SIZE)) && (this->canChangeSidAndPid)); i++)
+          {
+            unsigned char *tsPacket = (unsigned char *)pData + i * DVB_PACKET_SIZE;
+            if (tsPacket[0] == SYNC_BYTE)
+            {
+              // synchronization byte correct
+              unsigned int pid = ((tsPacket[1] & 0x1F) << 8) + tsPacket[2];
+
+              if (pid < PID_COUNT)
+              {
+                // first look for MPEG TS packet with PAT
+                if (pid == PID_PAT)
+                {
+                  // packet is PAT packet
+                  // changing SID and PID is allowed only for stream with one channel
+                  // analyse PAT if there is only one PMT
+                  PatParser *patParser = new PatParser(&this->crc32);
+                  if (patParser != NULL)
+                  {
+                    if (patParser->SetPatData(tsPacket, DVB_PACKET_SIZE))
+                    {
+                      if (patParser->IsValidPacket())
+                      {
+                        unsigned int programNumberCount = patParser->GetProgramNumberCount();
+                        if (programNumberCount == 1)
+                        {
+                          unsigned int channelSid = patParser->GetProgramNumber(0);
+                          unsigned int channelPid = patParser->GetPid(0);
+
+                          if ((channelSid != UINT_MAX) && (channelPid != UINT_MAX))
+                          {
+                            this->oldSid = channelSid;
+                            this->oldPid = channelPid;
+                          }
+
+                          if ((this->oldSid != SID_DEFAULT) && (this->oldPid != PID_DEFAULT) && (this->newSid != SID_DEFAULT) && (this->newPid != PID_DEFAULT))
+                          {
+                            // change SID and PID in PAT
+                            // recalculate CRC32
+                            bool setSid = patParser->SetProgramNumber(0, this->newSid);
+                            bool setPid = patParser->SetPid(0, this->newPid);
+                            bool setCrc32 = patParser->RecalculateCrc32();
+
+                            if (setSid && setPid && setCrc32)
+                            {
+                              unsigned char *patPacket = patParser->GetPatPacket();
+                              if (patPacket != NULL)
+                              {
+                                memcpy(tsPacket, patPacket, DVB_PACKET_SIZE);
+                              }
+                              FREE_MEM(patPacket);
+                            }
+                            else
+                            {
+                              this->logger.Log(LOGGER_WARNING, _T("%s: %s: cannot set SID, PID or recalculate CRC32, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                              this->canChangeSidAndPid = false;
+                            }
+                          }
+                        }
+                        else
+                        {
+                          this->logger.Log(LOGGER_WARNING, _T("%s: %s: program number count is not one: %u, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME, programNumberCount);
+                          this->canChangeSidAndPid = false;
+                        }
+                      }
+                      else
+                      {
+                        this->logger.Log(LOGGER_WARNING, _T("%s: %s: not valid PAT packet, ignoring"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                      }
+                    }
+                    delete patParser;
+                  }
+                  else
+                  {
+                    this->logger.Log(LOGGER_WARNING, _T("%s: %s: cannot create PAT parser, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                    this->canChangeSidAndPid = false;
+                  }
+                }
+
+                if (pid == this->oldPid)
+                {
+                  // PID of MPEG TS packet is same as old PID
+                  // this PID have to be changed to new PID
+                  // checksum doesn't have to be recalculated
+
+                  PmtParser *pmtParser = new PmtParser(&this->crc32);
+                  if (pmtParser != NULL)
+                  {
+                    if (pmtParser->SetPmtData(tsPacket, DVB_PACKET_SIZE))
+                    {
+                      if (pmtParser->IsValidPacket())
+                      {
+                        // change SID and PID in PMT
+                        // recalculate CRC32
+                        bool setSid = pmtParser->SetProgramNumber(newSid);
+                        bool setPid = pmtParser->SetPacketPid(this->newPid);
+                        bool setCrc32 = pmtParser->RecalculateCrc32();
+
+                        if (setSid && setPid && setCrc32)
+                        {
+                          unsigned char *pmtPacket = pmtParser->GetPmtPacket();
+                          if (pmtPacket != NULL)
+                          {
+                            memcpy(tsPacket, pmtPacket, DVB_PACKET_SIZE);
+                          }
+                          FREE_MEM(pmtPacket);
+                        }
+                        else
+                        {
+                          this->logger.Log(LOGGER_WARNING, _T("%s: %s: cannot set SID, PID or recalculate CRC32, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                          this->canChangeSidAndPid = false;
+                        }
+                      }
+                      else
+                      {
+                        this->logger.Log(LOGGER_WARNING, _T("%s: %s: not valid PMT packet, ignoring"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                      }
+                    }
+                    delete pmtParser;
+                  }
+                  else
+                  {
+                    this->logger.Log(LOGGER_WARNING, _T("%s: %s: cannot create PMT parser, changing SID and PID disabled"), MODULE_NAME, METHOD_FILL_BUFFER_NAME);
+                    this->canChangeSidAndPid = false;
+                  }
+                }
+              }
+              else
+              {
+                this->logger.Log(LOGGER_WARNING, _T("%s: %s: wrong PID, changing SID and PID disabled, PID: %u"), MODULE_NAME, METHOD_FILL_BUFFER_NAME, pid);
+                this->canChangeSidAndPid = false;
+              }
+            }
+            else
+            {
+              this->logger.Log(LOGGER_WARNING, METHOD_MESSAGE_FORMAT, MODULE_NAME, METHOD_FILL_BUFFER_NAME, _T("synchronization byte is not correct, changing SID and PID disabled"));
+              this->canChangeSidAndPid = false;
+            }
+          }
+
+          // now look for MPEG TS packet with PMT and replace old PID with new PID
+        }
+      }
+
       if (this->dumpRawTS && (postedData > 0))
       {
         TCHAR *folder = GetTvServerFolder();
@@ -500,7 +662,7 @@ HRESULT CMPIPTVSourceStream::FillBuffer(IMediaSample *pSamp)
             for(unsigned int i = 0; (i < ((postedData / DVB_PACKET_SIZE)) && (this->analyzeDiscontinuity)); i++)
             {
               unsigned char *tsPacket = (unsigned char *)pData + i * DVB_PACKET_SIZE;
-              if (tsPacket[0] == 0x47)
+              if (tsPacket[0] == SYNC_BYTE)
               {
                 // synchronization byte correct
                 unsigned int pid = ((tsPacket[1] & 0x1F) << 8) + tsPacket[2];
@@ -509,7 +671,7 @@ HRESULT CMPIPTVSourceStream::FillBuffer(IMediaSample *pSamp)
 
                 // check for right values
                 // skip NULL packets (PID 0x1FFF)
-                if ((pid < PID_COUNT) && (currentCounter <= 0x0F) && (adaptationField <= 0x03) && (pid != 0x1FFF))
+                if ((pid < PID_COUNT) && (currentCounter <= 0x0F) && (adaptationField <= 0x03) && (pid != PID_NULL))
                 {
                   // PID counters are incremented only if payload is present (adaptation field is 1 or 3)
                   if ((adaptationField == 0x01) || (adaptationField == 0x03))
@@ -530,7 +692,7 @@ HRESULT CMPIPTVSourceStream::FillBuffer(IMediaSample *pSamp)
                     this->pidCounters[pid] = currentCounter;
                   }
                 }
-                else
+                else if (pid != PID_NULL)
                 {
                   this->logger.Log(LOGGER_WARNING, _T("%s: %s: wrong PID, current counter or adaptation field, analyze discontinuity disabled, PID: %u, current counter: %u, adaptation field: %u"), MODULE_NAME, METHOD_FILL_BUFFER_NAME, pid, currentCounter, adaptationField);
                   this->analyzeDiscontinuity = false;
@@ -846,6 +1008,17 @@ HRESULT CMPIPTVSourceStream::Run(REFERENCE_TIME tStart)
 
 bool CMPIPTVSourceStream::Load(const TCHAR *url, const CParameterCollection *parameters)
 {
+  if (parameters != NULL)
+  {
+    this->newSid = ((CParameterCollection *)parameters)->GetValueLong(CONFIGURATION_SID_VALUE, true, UINT_MAX);
+    this->newPid = ((CParameterCollection *)parameters)->GetValueLong(CONFIGURATION_PID_VALUE, true, UINT_MAX);
+    this->oldSid = SID_DEFAULT;
+    this->oldPid = PID_DEFAULT;
+    this->canChangeSidAndPid = true;
+
+    this->logger.Log(LOGGER_VERBOSE, _T("%s: %s: changed SID: %u, changed PID: %u"), MODULE_NAME, _T("Load()"), this->newSid, this->newPid);
+  }
+
   // for each protocol run ParseUrl() method
   // those which return STATUS_OK supports protocol
   // set active protocol to first implementation

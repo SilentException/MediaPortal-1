@@ -27,6 +27,7 @@
 #include "Logger.h"
 #include "ProtocolInterface.h"
 #include "ParameterCollection.h"
+#include "Crc32.h"
 
 #define     STATUS_NONE                                               0
 #define     STATUS_INITIALIZE_ERROR                                   -1
@@ -38,6 +39,10 @@
 #define     RUN_ERROR_UNEXPECTED                                      -1
 #define     RUN_ERROR_NO_DATA_AVAILABLE                               -2
 #define     RUN_ERROR_INITIALIZE                                      -3
+
+#define     SYNC_BYTE                                                 0x47
+#define     PID_PAT                                                   0x0000
+#define     PID_NULL                                                  0x1FFF
 
 struct ProtocolImplementation
 {
@@ -105,6 +110,26 @@ private:
 
   // pointer to array of PID counters
   unsigned int *pidCounters;
+
+  // specifies is SID and PID can be changed
+  bool canChangeSidAndPid;
+
+  // specifies value for new SID
+  // if SID_DEFAULT (UINT_MAX) then value is not specified
+  unsigned int newSid;
+  // specifies value for new SID which have to be changed to newSid
+  // if SID_DEFAULT (UINT_MAX) then was not found yet
+  unsigned int oldSid;
+
+  // specifies value for new PID
+  // if PID_DEFAULT (UINT_MAX) then value is not specified
+  unsigned int newPid;
+  // specifies value for new PID which have to be changed to newPid
+  // if PID_DEFAULT (UINT_MAX) then was not found yet
+  unsigned int oldPid;
+
+  // instance of CRC32 to compute CRC32 checksum
+  Crc32 crc32;
 };
 
 #endif

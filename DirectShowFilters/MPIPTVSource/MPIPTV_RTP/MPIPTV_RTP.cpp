@@ -290,8 +290,6 @@ void CMPIPTV_RTP::ReceiveData(bool *shouldExit)
           }
           else
           {
-            this->logger.Log(LOGGER_INFO, _T("%s: %s: bytes received: %i"), PROTOCOL_IMPLEMENTATION_NAME, METHOD_RECEIVE_DATA_NAME, length);
-
             if (this->dumpInputPackets)
             {
               DumpInputPacket(this->GetInstanceId(), length, this->receiveBuffer);

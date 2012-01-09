@@ -62,6 +62,11 @@
       <AdditionalLibraryDirectories>..\MPIPTVSource\bin\Debug;..\MPIPTV_UDP\bin\Debug;..\..\shared;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>mpiptvsource.lib;mpiptv_udp.lib;LiveMedia555D.lib;wininet.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>IF NOT EXIST "$(SolutionDir)\MPIPTVSource\bin\Debug" mkdir "$(SolutionDir)\MPIPTVSource\bin\Debug"
+copy /Y "$(TargetPath)" "$(SolutionDir)\MPIPTVSource\bin\Debug\$(TargetFileName)"
+copy /Y "$(TargetDir)\$(TargetName).pdb" "$(SolutionDir)\MPIPTVSource\bin\Debug\$(TargetName).pdb"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -84,6 +89,10 @@
       <Version>
       </Version>
     </Link>
+    <PostBuildEvent>
+      <Command>IF NOT EXIST "$(SolutionDir)\MPIPTVSource\bin\Release" mkdir "$(SolutionDir)\MPIPTVSource\bin\Release"
+copy /Y "$(TargetPath)" "$(SolutionDir)\MPIPTVSource\bin\Release\$(TargetFileName)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="MPIPTV_RTSP.h" />

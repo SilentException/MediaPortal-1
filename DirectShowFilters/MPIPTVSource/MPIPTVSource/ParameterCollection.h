@@ -38,6 +38,9 @@
 #define ANALYZE_DISCONTINUITY_DEFAULT                               1
 #define DUMP_INPUT_PACKETS_DEFAULT                                  0
 
+#define SID_DEFAULT                                                 UINT_MAX
+#define PID_DEFAULT                                                 UINT_MAX
+
 #define CONFIGURATION_SECTION_MPIPTVSOURCE                          _T("MPIPTVSource")
 
 #define CONFIGURATION_MAX_LOG_SIZE                                  _T("MaxLogSize")
@@ -50,6 +53,9 @@
 #define CONFIGURATION_ANALYZE_DISCONTINUITY                         _T("AnalyzeDiscontinuity")
 #define CONFIGURATION_DUMP_INPUT_PACKETS                            _T("DumpInputPackets")
 
+#define CONFIGURATION_SID_VALUE                                     _T("SidValue")
+#define CONFIGURATION_PID_VALUE                                     _T("PidValue")
+
 #define INTERFACE_PARAMETER_NAME                                    _T("interface")
 
 // this is temporary parameter for url
@@ -59,30 +65,19 @@
 #include "MPIPTVSourceExports.h"
 #include "Parameter.h"
 #include "Logger.h"
+#include "Collection.h"
 
-class MPIPTVSOURCE_API CParameterCollection
+class MPIPTVSOURCE_API CParameterCollection : public CCollection<CParameter, TCHAR *>
 {
 public:
   CParameterCollection(void);
   ~CParameterCollection(void);
 
-  // add parameter to collection
-  // @param parameter : the reference to parameter to add
-  // @return : true if successful, false otherwise
-  bool Add(PCParameter parameter);
-
-  // append parameter collection
-  // @param collection : the reference to collection to add
-  void Append(CParameterCollection *collection);
-
-  // clear collection of parameters
-  void Clear(void);
-
   // test if parameter exists in collection
   // @param name : the name of parameter to find
   // @param invariant : specifies if parameter name shoud be find with invariant casing
   // @return : true if parameter exists, false otherwise
-  bool Contains(const TCHAR *name, bool invariant);
+  bool Contains(TCHAR *name, bool invariant);
 
   // get the parameter from collection with specified index
   // @param index : the index of parameter to find
@@ -93,11 +88,35 @@ public:
   // @param name : the name of parameter to find
   // @param invariant : specifies if parameter name shoud be find with invariant casing
   // @return : the reference to parameter or NULL if not find
-  PCParameter GetParameter(const TCHAR *ame, bool invariant);
+  PCParameter GetParameter(TCHAR *name, bool invariant);
 
-  // get count of parameters in collection
-  // @return : count of parameters in collection
-  unsigned int Count(void);
+  // get the string value of parameter with specified name
+  // @param name : the name of parameter to find
+  // @param invariant : specifies if parameter name shoud be find with invariant casing
+  // @param defaultValue : the default value to return
+  // @return : the value of parameter or default value if not found
+  TCHAR *GetValue(TCHAR *name, bool invariant, TCHAR *defaultValue);
+
+  // get the integer value of parameter with specified name
+  // @param name : the name of parameter to find
+  // @param invariant : specifies if parameter name shoud be find with invariant casing
+  // @param defaultValue : the default value to return
+  // @return : the value of parameter or default value if not found
+  long GetValueLong(TCHAR *name, bool invariant, long defaultValue);
+
+  // get the unsigned integer value of parameter with specified name
+  // @param name : the name of parameter to find
+  // @param invariant : specifies if parameter name shoud be find with invariant casing
+  // @param defaultValue : the default value to return
+  // @return : the value of parameter or default value if not found
+  long GetValueUnsignedInt(TCHAR *name, bool invariant, unsigned int defaultValue);
+
+  // get the boolean value of parameter with specified name
+  // @param name : the name of parameter to find
+  // @param invariant : specifies if parameter name shoud be find with invariant casing
+  // @param defaultValue : the default value to return
+  // @return : the value of parameter or default value if not found
+  bool GetValueBool(TCHAR *name, bool invariant, bool defaultValue);
 
   // log all parameters to log file
   // @param logger : the logger
@@ -106,35 +125,27 @@ public:
   // @param functionName : name of function calling LogCollection()
   void LogCollection(CLogger *logger, unsigned int loggerLevel, const TCHAR *protocolName, const TCHAR *functionName);
 
-  // get the string value of parameter with specified name
-  // @param name : the name of parameter to find
-  // @param invariant : specifies if parameter name shoud be find with invariant casing
-  // @param defaultValue : the default value to return
-  // @return : the value of parameter or default value if not found
-  TCHAR *GetValue(const TCHAR *name, bool invariant, TCHAR *defaultValue);
-
-  // get the integer value of parameter with specified name
-  // @param name : the name of parameter to find
-  // @param invariant : specifies if parameter name shoud be find with invariant casing
-  // @param defaultValue : the default value to return
-  // @return : the value of parameter or default value if not found
-  long GetValueLong(const TCHAR *name, bool invariant, long defaultValue);
-
-  // get the boolean value of parameter with specified name
-  // @param name : the name of parameter to find
-  // @param invariant : specifies if parameter name shoud be find with invariant casing
-  // @param defaultValue : the default value to return
-  // @return : the value of parameter or default value if not found
-  bool GetValueBool(const TCHAR *name, bool invariant, bool defaultValue);
 protected:
-  // count of parameters in collection
-  unsigned int parameterCount;
+  // compare two item keys
+  // @param firstKey : the first item key to compare
+  // @param secondKey : the second item key to compare
+  // @param context : the reference to user defined context
+  // @return : 0 if keys are equal, lower than zero if firstKey is lower than secondKey, greater than zero if firstKey is greater than secondKey
+  int CompareItemKeys(TCHAR *firstKey, TCHAR *secondKey, void *context);
 
-  // maximum count of parameters to store in collection
-  unsigned int parameterMaximumCount;
-private:
-  // pointer to array of pointers to parameters
-  PCParameter *parameters;
+  // gets key for item
+  // @param item : the item to get key
+  // @return : the key of item
+  TCHAR *GetKey(CParameter *item);
+
+  // clones specified item
+  // @param item : the item to clone
+  // @return : deep clone of item or NULL if not implemented
+  CParameter *Clone(CParameter *item);
+
+  // frees item key
+  // @param key : the item to free
+  void FreeKey(TCHAR *key);
 };
 
 #endif

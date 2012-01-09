@@ -35,6 +35,7 @@ CLogger::CLogger()
   }
 
   this->maxLogSize = MAX_LOG_SIZE_DEFAULT;
+  this->allowedLogVerbosity = LOG_VERBOSITY_DEFAULT;
 
   // set maximum log size
   CParameterCollection *parameters = GetConfiguration(NULL, NULL, NULL, CONFIGURATION_SECTION_MPIPTVSOURCE);

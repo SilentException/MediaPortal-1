@@ -432,12 +432,12 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   File "${TVSERVER.BASE}\Ionic.Zip.dll"
 
   ; protocol implementations for MPIPTVSource.ax
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_FILE\bin\${BUILD_TYPE}\MPIPTV_FILE.dll"
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_HTTP\bin\${BUILD_TYPE}\MPIPTV_HTTP.dll"
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_KARTINA\bin\${BUILD_TYPE}\MPIPTV_KARTINA.dll"
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_RTP\bin\${BUILD_TYPE}\MPIPTV_RTP.dll"
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_RTSP\bin\${BUILD_TYPE}\MPIPTV_RTSP.dll"
-  File "${git_DirectShowFilters}\MPIPTVSource\MPIPTV_UDP\bin\${BUILD_TYPE}\MPIPTV_UDP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_FILE.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_HTTP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_KARTINA.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_RTP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_RTSP.dll"
+  File "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTV_UDP.dll"
 
   File "${git_DirectShowFilters}\StreamingServer\bin\${BUILD_TYPE}\StreamingServer.dll"
   
@@ -467,7 +467,7 @@ ${MementoSection} "MediaPortal TV Server" SecServer
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPWriter\bin\${BUILD_TYPE}\mpFileWriter.ax" "$INSTDIR\mpFileWriter.ax" "$INSTDIR"
   !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\bin\Release\PDMpgMux.ax" "$INSTDIR\PDMpgMux.ax" "$INSTDIR"
   ; filter for IPTV support
-  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPIPTVSource\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ax" "$INSTDIR\MPIPTVSource.ax" "$INSTDIR"
+  !insertmacro InstallLib REGDLL NOTSHARED NOREBOOT_NOTPROTECTED "${git_DirectShowFilters}\MPIPTVSource\bin\${BUILD_TYPE}\MPIPTVSource.ax" "$INSTDIR\MPIPTVSource.ax" "$INSTDIR"
 
   #---------------------------------------------------------------------------
   # SERVICE INSTALLATION

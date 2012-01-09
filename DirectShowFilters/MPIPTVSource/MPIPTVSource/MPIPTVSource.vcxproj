@@ -64,6 +64,11 @@
       <ModuleDefinitionFile>mpiptvsource.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(DSHOW_BASE)Debug_MBCS\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>IF NOT EXIST "$(SolutionDir)\MPIPTVSource\bin\Debug" mkdir "$(SolutionDir)\MPIPTVSource\bin\Debug"
+copy /Y "$(TargetPath)" "$(SolutionDir)\MPIPTVSource\bin\Debug\$(TargetFileName)"
+copy /Y "$(TargetDir)\$(TargetName).pdb" "$(SolutionDir)\MPIPTVSource\bin\Debug\$(TargetName).pdb"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -84,8 +89,14 @@
       <AdditionalLibraryDirectories>$(DSHOW_BASE)Release_MBCS\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>strmbase.lib;winmm.lib;Shlwapi.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>IF NOT EXIST "$(SolutionDir)\MPIPTVSource\bin\Release" mkdir "$(SolutionDir)\MPIPTVSource\bin\Release"
+copy /Y "$(TargetPath)" "$(SolutionDir)\MPIPTVSource\bin\Release\$(TargetFileName)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Collection.h" />
+    <ClInclude Include="Crc32.h" />
     <ClInclude Include="IMPIPTVConnectInfo.h" />
     <ClInclude Include="LinearBuffer.h" />
     <ClInclude Include="Logger.h" />
@@ -96,6 +107,10 @@
     <ClInclude Include="Network.h" />
     <ClInclude Include="Parameter.h" />
     <ClInclude Include="ParameterCollection.h" />
+    <ClInclude Include="PatParser.h" />
+    <ClInclude Include="PmtParser.h" />
+    <ClInclude Include="PmtStreamDescription.h" />
+    <ClInclude Include="PmtStreamDescriptionCollection.h" />
     <ClInclude Include="ProtocolInterface.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Strings.h" />
@@ -103,6 +118,7 @@
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Crc32.cpp" />
     <ClCompile Include="dllmain.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -119,6 +135,10 @@
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="Parameter.cpp" />
     <ClCompile Include="ParameterCollection.cpp" />
+    <ClCompile Include="PatParser.cpp" />
+    <ClCompile Include="PmtParser.cpp" />
+    <ClCompile Include="PmtStreamDescription.cpp" />
+    <ClCompile Include="PmtStreamDescriptionCollection.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

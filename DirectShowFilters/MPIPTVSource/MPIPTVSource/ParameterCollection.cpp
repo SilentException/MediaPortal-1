@@ -23,120 +23,51 @@
 #include "ParameterCollection.h"
 
 CParameterCollection::CParameterCollection(void)
+  : CCollection(CCollection::Delete)
 {
-  this->parameterCount = 0;
-  this->parameterMaximumCount = 16;
-  //this->parameters = (PCParameter *)CoTaskMemAlloc(this->parameterMaximumCount * sizeof(PCParameter));
-  this->parameters = ALLOC_MEM_SET(this->parameters, PCParameter, this->parameterMaximumCount, 0);
 }
 
 CParameterCollection::~CParameterCollection(void)
 {
-  this->Clear();
-
-  /*if (this->parameters != NULL)
-  {
-    CoTaskMemFree(this->parameters);
-  }
-  this->parameters = NULL;*/
-  FREE_MEM(this->parameters);
 }
 
-void CParameterCollection::Clear(void)
+int CParameterCollection::CompareItemKeys(TCHAR *firstKey, TCHAR *secondKey, void *context)
 {
-  // call destructors of all parameters
-  for(unsigned int i = 0; i < this->parameterCount; i++)
+  bool invariant = (*(bool *)context);
+
+  if (invariant)
   {
-    delete (*(this->parameters + i));
+    return _tcsicmp(firstKey, secondKey);
   }
-
-  // set used parameters to 0
-  this->parameterCount = 0;
-}
-
-bool CParameterCollection::Add(PCParameter parameter)
-{
-  if (this->parameterCount >= this->parameterMaximumCount)
+  else
   {
-    // there is need to enlarge array of parameters
-    // double number of allowed parameters
-    this->parameterMaximumCount *= 2;
-    PCParameter *parameterArray = REALLOC_MEM(this->parameters, PCParameter, this->parameterMaximumCount);
-
-    if (parameterArray == NULL)
-    {
-      return FALSE;
-    }
-
-    this->parameters = parameterArray;
-  }
-
-  *(this->parameters + this->parameterCount++) = parameter;
-  return TRUE;
-}
-
-void CParameterCollection::Append(CParameterCollection *collection)
-{
-  if (collection != NULL)
-  {
-    unsigned int count = collection->Count();
-    for (unsigned int i = 0; i < count; i++)
-    {
-      this->Add(collection->GetParameter(i)->Clone());
-    }
+    return _tcscmp(firstKey, secondKey);
   }
 }
 
-bool CParameterCollection::Contains(const TCHAR *name, bool invariant)
+bool CParameterCollection::Contains(TCHAR *name, bool invariant)
 {
-  return (this->GetParameter(name, invariant) != NULL);
+  return __super::Contains(name, (void *)&invariant);
+}
+
+TCHAR *CParameterCollection::GetKey(CParameter *item)
+{
+  return Duplicate(item->GetName());
+}
+
+void CParameterCollection::FreeKey(TCHAR *key)
+{
+  FREE_MEM(key);
 }
 
 PCParameter CParameterCollection::GetParameter(unsigned int index)
 {
-  PCParameter result = NULL;
-  if (index <= this->parameterCount)
-  {
-    result = *(this->parameters + index);
-  }
-  return result;
+  return __super::GetItem(index);
 }
 
-PCParameter CParameterCollection::GetParameter(const TCHAR *name, bool invariant)
+PCParameter CParameterCollection::GetParameter(TCHAR *name, bool invariant)
 {
-  PCParameter result = NULL;
-  for(unsigned int i = 0; i < this->parameterCount; i++)
-  {
-    PCParameter parameter = *(this->parameters + i);
-
-    if (_tcslen(name) == parameter->GetNameLength())
-    {
-      if (invariant)
-      {
-        if (_tcsicmp(name, parameter->GetName()) == 0)
-        {
-          // same names
-          result = parameter;
-          break;
-        }
-      }
-      else
-      {
-        if (_tcscmp(name, parameter->GetName()) == 0)
-        {
-          // same names
-          result = parameter;
-          break;
-        }
-      }
-    }
-  }
-  return result;
-}
-
-unsigned int CParameterCollection::Count(void)
-{
-  return this->parameterCount;
+  return this->GetItem(name, (void *)&invariant);
 }
 
 void CParameterCollection::LogCollection(CLogger *logger, unsigned int loggerLevel, const TCHAR *protocolName, const TCHAR *functionName)
@@ -164,7 +95,7 @@ void CParameterCollection::LogCollection(CLogger *logger, unsigned int loggerLev
   }
 }
 
-TCHAR *CParameterCollection::GetValue(const TCHAR *name, bool invariant, TCHAR *defaultValue)
+TCHAR *CParameterCollection::GetValue(TCHAR *name, bool invariant, TCHAR *defaultValue)
 {
   PCParameter parameter = this->GetParameter(name, invariant);
   if (parameter != NULL)
@@ -177,7 +108,7 @@ TCHAR *CParameterCollection::GetValue(const TCHAR *name, bool invariant, TCHAR *
   }
 }
 
-long CParameterCollection::GetValueLong(const TCHAR *name, bool invariant, long defaultValue)
+long CParameterCollection::GetValueLong(TCHAR *name, bool invariant, long defaultValue)
 {
   TCHAR *value = this->GetValue(name, invariant, _T(""));
   TCHAR *end = NULL;
@@ -191,7 +122,21 @@ long CParameterCollection::GetValueLong(const TCHAR *name, bool invariant, long 
   return valueLong;
 }
 
-bool CParameterCollection::GetValueBool(const TCHAR *name, bool invariant, bool defaultValue)
+long CParameterCollection::GetValueUnsignedInt(TCHAR *name, bool invariant, unsigned int defaultValue)
+{
+  TCHAR *value = this->GetValue(name, invariant, _T(""));
+  TCHAR *end = NULL;
+  long valueLong = _tcstol(value, &end, 10);
+  if ((valueLong == 0) && (value == end))
+  {
+    // error while converting
+    valueLong = defaultValue;
+  }
+
+  return (unsigned int)valueLong;
+}
+
+bool CParameterCollection::GetValueBool(TCHAR *name, bool invariant, bool defaultValue)
 {
   switch (this->GetValueLong(name, invariant, -1))
   {
@@ -202,4 +147,9 @@ bool CParameterCollection::GetValueBool(const TCHAR *name, bool invariant, bool 
   default:
     return defaultValue;
   }
+}
+
+CParameter *CParameterCollection::Clone(CParameter *item)
+{
+  return item->Clone();
 }

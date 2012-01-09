@@ -1184,7 +1184,7 @@ MPIPTVSOURCE_API int DumpInputPacket(GUID protocolInstance, unsigned int length,
   TCHAR *guid = ConvertGuidToString(protocolInstance);
   if ((folder != NULL) && (guid != NULL) && (length > 0) && (packet != NULL))
   {
-    TCHAR *lengthFileName = FormatString(_T("%slog\\mpiptv_input_dump_length_%s.ts"), folder, guid);
+    TCHAR *lengthFileName = FormatString(_T("%slog\\mpiptv_input_dump_length_%s.txt"), folder, guid);
     TCHAR *dumpFileName = FormatString(_T("%slog\\mpiptv_input_dump_%s.ts"), folder, guid);
     if ((dumpFileName != NULL) && (lengthFileName != NULL))
     {
