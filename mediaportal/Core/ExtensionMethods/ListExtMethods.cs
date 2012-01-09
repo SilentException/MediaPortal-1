@@ -18,8 +18,12 @@
 
 #endregion
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using MediaPortal.GUI.Library;
+using System.Linq;
+using System.Threading;
 
 namespace MediaPortal.ExtensionMethods
 {
@@ -29,13 +33,8 @@ namespace MediaPortal.ExtensionMethods
     {
       if (listInterface != null)
       {
-        //for (int i = listInterface.Count - 1; i >= 0; i--)        
-        //foreach (object o in listInterface)
-        for (int i = 0; i < listInterface.Count; i++)
-        {
-          object o = listInterface[i];
-          DisposeHelper.DisposeItem(o);
-        }
+        //listInterface.DisposeChildren();
+        listInterface.OfType<IDisposable>().DisposeChildren();
       }
     }
 
@@ -43,44 +42,47 @@ namespace MediaPortal.ExtensionMethods
     {
       if (listInterface != null)
       {
-        //for (int i = listInterface.Count - 1; i >= 0; i--)
-        for (int i = 0; i < listInterface.Count; i++)
-        {
-          object o = listInterface[i];
-          DisposeHelper.DisposeItem(o);
-        }
-
+        listInterface.Dispose();
         listInterface.Clear();
       }
     }
-
 
     public static void DisposeAndClearCollection<T>(this ICollection<T> listInterface)
     {
       if (listInterface != null)
       {
-        foreach (object o in listInterface)
-        {
-          DisposeHelper.DisposeItem(o);
-        }
-
+        //((ICollection)listInterface).DisposeChildren();
+        listInterface.DisposeChildren();
         listInterface.Clear();
       }
     }
 
     public static void DisposeAndClearList(this IList listInterface)
     {
-      if (listInterface != null)
-      {
-        //for (int i = listInterface.Count - 1; i >= 0; i--)
-        //foreach (object o in listInterface)
-        for (int i = 0; i < listInterface.Count; i++)
-        {
-          object o = listInterface[i];
-          DisposeHelper.DisposeItem(o);
-        }
+      listInterface.DisposeAndClear();
+    }
 
-        listInterface.Clear();
+    static void DisposeChildren<T>(this IEnumerable<T> collection)
+    {
+      if (collection == null) return;
+      IDisposable[] shallowCopy;
+      try
+      {
+        lock (collection)
+          shallowCopy = collection.OfType<IDisposable>().ToArray();
+      }
+      catch (InvalidOperationException ex)
+      {
+        Log.Error("List disposing failed: " + ex.ToString());
+        return;
+      }
+      for (int i = 0; i < shallowCopy.Length; i++)
+      {
+        var o = shallowCopy[i];
+        if (o != null)
+        {
+          o.Dispose();
+        }
       }
     }
   }

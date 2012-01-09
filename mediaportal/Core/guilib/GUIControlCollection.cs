@@ -42,14 +42,20 @@ namespace MediaPortal.GUI.Library
 
     public void Insert(int index, GUIControl item)
     {
-      TryAdd(item);
-      list.Insert(index, item);
+      lock (this)
+      {
+        TryAdd(item);
+        list.Insert(index, item);
+      }
     }
 
     public void RemoveAt(int index)
     {
-      knownIDs.Remove(list[index].GetID);
-      list.RemoveAt(index);
+      lock (this)
+      {
+        knownIDs.Remove(list[index].GetID);
+        list.RemoveAt(index);
+      }
     }
 
     public GUIControl this[int index]
@@ -57,21 +63,30 @@ namespace MediaPortal.GUI.Library
       get { return list[index]; }
       set
       {
-        TryAdd(value);
-        list[index] = value;
+        lock (this)
+        {
+          TryAdd(value);
+          list[index] = value;
+        }
       }
     }
 
     public void Add(GUIControl item)
     {
-      TryAdd(item);
-      list.Add(item);
+      lock (this)
+      {
+        TryAdd(item);
+        list.Add(item);
+      }
     }
 
     public void Clear()
     {
-      knownIDs.Clear();
-      list.Clear();
+      lock (this)
+      {
+        knownIDs.Clear();
+        list.Clear();
+      }
     }
 
     public bool Contains(GUIControl item)
@@ -99,7 +114,10 @@ namespace MediaPortal.GUI.Library
       var index = IndexOf(item);
       if (index >= 0)
       {
-        RemoveAt(IndexOf(item));
+        lock (this)
+        {
+          RemoveAt(IndexOf(item));
+        }
         return true;
       }
       return false;

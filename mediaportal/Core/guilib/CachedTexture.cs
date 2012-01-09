@@ -147,7 +147,7 @@ namespace MediaPortal.GUI.Library
               {
                 Log.Info("Frame:Image fontengine: remove texture:{0} {1}", _textureNumber.ToString(), _imageName);
               }
-              Dispose();
+              Dispose(false);
             }
             catch (Exception)
             {
@@ -218,6 +218,10 @@ namespace MediaPortal.GUI.Library
           {
             DisposeUnmanagedResources();
           }
+
+          //if (!disposeManagedResources)
+          //    return;
+
           if (Disposed != null)
           {
             Disposed(this, new EventArgs());
@@ -389,8 +393,8 @@ namespace MediaPortal.GUI.Library
       }
       set
       {
-        Dispose(); // cleanup..
-        _listFrames.DisposeAndClear();
+        Dispose(false); // cleanup..
+        //_listFrames.DisposeAndClear();
         value.Disposed += new EventHandler(frame_Disposed);
         _listFrames.Add(value);
       }
@@ -506,6 +510,9 @@ namespace MediaPortal.GUI.Library
           DisposeUnmanagedResources();
         }
       }
+
+      //if (!disposeManagedResources)
+      //  return;
 
       DisposeFrames();
       //somehow we need to call this always, regardless of state 'this.disposed', otherwise we leak resources.      
