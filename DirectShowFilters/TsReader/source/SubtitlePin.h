@@ -38,7 +38,7 @@ public:
   HRESULT CheckConnect(IPin *pReceivePin);
   HRESULT FillBuffer(IMediaSample *pSample);
   HRESULT BreakConnect();
-
+  HRESULT DoBufferProcessingLoop(void);
 
   // CSourceSeeking
   HRESULT ChangeStart();
@@ -50,22 +50,26 @@ public:
   STDMETHODIMP GetCurrentPosition(LONGLONG *pCurrent);
 
   HRESULT OnThreadStartPlay();
+  void SetStart(CRefTime rtStartTime);
 
 	void SetRunningStatus(bool onOff) ;
   bool IsConnected();
+  bool IsInFillBuffer();
+  void SetDiscontinuity(bool onOff);
 
 protected:
   void LogCurrentPosition();
   void UpdateFromSeek();
+  void CreateEmptySample(IMediaSample *pSample);
 
   CTsReaderFilter * const m_pTsReaderFilter;
   bool      m_bConnected;
   BOOL      m_bDiscontinuity;
   CCritSec* m_section;
-  CCritSec  m_bufferLock;
-  bool 			m_bSeeking;
-  DWORD     m_seekTimer;
-  CRefTime  m_lastSeek;
+  // CCritSec  m_bufferLock;
+  // bool 		 m_bSeeking;
+  // DWORD     m_seekTimer;
+  // CRefTime  m_lastSeek;
   bool      m_bInFillBuffer;
   bool      m_bPresentSample;
 	bool      m_bRunning ;

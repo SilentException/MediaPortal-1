@@ -35,8 +35,14 @@
 
 #define INIT_SHOWBUFFERVIDEO 20
 #define INIT_SHOWBUFFERAUDIO 10
+#define FS_TIM_LIM (2*1000*10000) //2 seconds in hns units
 
 using namespace std;
+
+//Macro for replacing timeGetTime()
+//The macro is used to avoid having to handle timeGetTime() rollover issues in the body of the code
+//m_tGTStartTime is initialised in CTsReaderFilter::CTsReaderFilter() when filter is loaded
+#define GET_TIME_NOW() (timeGetTime() - m_tGTStartTime)
 
 class CSubtitlePin;
 class CAudioPin;
@@ -160,15 +166,19 @@ public:
   bool            IsFilterRunning();
   CDeMultiplexer& GetDemultiplexer();
   void            Seek(CRefTime&  seekTime, bool seekInFile);
-  void            SeekDone(CRefTime& refTime);
-  void            SeekStart();
+//  void            SeekDone(CRefTime& refTime);
+//  void            SeekStart();
   void            SeekPreStart(CRefTime& rtSeek);
+  bool            SetSeeking(bool onOff);
+  void            SetWaitDataAfterSeek(bool onOff);
   double          UpdateDuration();
   CAudioPin*      GetAudioPin();
   CVideoPin*      GetVideoPin();
   CSubtitlePin*   GetSubtitlePin();
   IDVBSubtitle*   GetSubtitleFilter();
   bool            IsTimeShifting();
+  bool            IsRTSP();
+  bool            IsUNCfile();
   CTsDuration&    GetDuration();
   FILTER_STATE    State() {return m_State;};
   void            DeltaCompensation(REFERENCE_TIME deltaComp);
@@ -184,7 +194,7 @@ public:
   bool            IsSeeking();
   int             SeekingDone();
   bool            IsStopping();
-  //bool            IsSeekingToEof();
+  bool            IsWaitDataAfterSeek();
 
   DWORD           m_lastPause;
   bool            m_bStreamCompensated;
@@ -198,7 +208,7 @@ public:
   
   bool            m_bLiveTv;
   bool            m_bStopping;
-  int             m_WaitForSeekToEof;
+  bool            m_WaitForSeekToEof;
 	
   void GetTime(REFERENCE_TIME *Time);
   void GetMediaPosition(REFERENCE_TIME *pMediaTime);
@@ -217,7 +227,7 @@ public:
   bool            m_EnableSlowMotionOnZapping;
 
   CLSID           GetCLSIDFromPin(IPin* pPin);
-
+  
 protected:
   void ThreadProc();
 
@@ -260,5 +270,8 @@ private:
   bool            m_bStoppedForUnexpectedSeek ;
   bool            m_bPauseOnClockTooFast;
   DWORD           m_MPmainThreadID;
+  bool            m_isUNCfile;
+  CCritSec        m_sectionSeeking;
+  bool            m_WaitDataAfterSeek;
 };
 

@@ -40,8 +40,6 @@ public:
   HRESULT CheckConnect(IPin *pReceivePin);
   HRESULT FillBuffer(IMediaSample *pSample);
   HRESULT BreakConnect();
-
-
   HRESULT DoBufferProcessingLoop(void);
 
   // CSourceSeeking
@@ -57,16 +55,21 @@ public:
   HRESULT OnThreadStartPlay();
   void SetStart(CRefTime rtStartTime);
   bool IsConnected();
+  bool IsInFillBuffer();
+  bool HasDeliveredSample();
   void SetDiscontinuity(bool onOff);
+  DWORD m_FillBuffSleepTime;
 
 protected:
   void      UpdateFromSeek();
+  void      CreateEmptySample(IMediaSample *pSample);
   
   CTsReaderFilter * const m_pTsReaderFilter;
   bool      m_bConnected;
   BOOL      m_bDiscontinuity;
   CCritSec* m_section;
   bool      m_bPresentSample;
+  bool      m_bInFillBuffer;
 
   FILTER_INFO m_filterInfo;
   
@@ -81,6 +84,9 @@ protected:
 	REFERENCE_TIME  m_llMTDSumAvg;	
 
   REFERENCE_TIME  m_llLastComp;
+  
+  DWORD m_LastFillBuffTime;
+  int   m_sampleCount;
 
 };
 
