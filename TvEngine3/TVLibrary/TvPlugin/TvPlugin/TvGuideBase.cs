@@ -3276,13 +3276,25 @@ namespace TvPlugin
           {
             string fileName = "";
             bool isRec = _currentProgram.IsRecording;
+            bool isRecNOepg = IsRecordingNoEPG(_currentProgram.ReferencedChannel());
+            // MS TEST!!!
+            //bool programInEPG = ProgramInEPG(_currentProgram);
+            bool programInEPG = _currentProgram.IdProgram != 0;
 
             Recording rec = null;
             if (isRec)
             {
               rec = Recording.ActiveRecording(_currentProgram.Title, _currentProgram.IdChannel);
             }
+            else if (isRecNOepg && !programInEPG)
+            {
+              Schedule schedule = Schedule.FindNoEPGSchedule(_currentProgram.ReferencedChannel());
 
+              if (schedule != null)
+              {
+                rec = Recording.ActiveRecording(schedule.IdSchedule);
+              }
+            }
 
             if (rec != null)
             {
@@ -3429,6 +3441,17 @@ namespace TvPlugin
         ShowProgramInfo();
       }
     }
+
+    /*
+    /// <summary>
+    /// Is Program part of proper EPG data
+    /// </summary>
+    private bool ProgramInEPG(Program _currentProgram) {
+      return !(_currentProgram.Title == GUILocalizeStrings.Get(736) &&
+               _currentProgram.Description == string.Empty &&
+               _currentProgram.Genre == string.Empty);
+    }
+    */
 
     /// <summary>
     /// "Record" via REC button
