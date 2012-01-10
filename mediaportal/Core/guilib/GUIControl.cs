@@ -1702,6 +1702,11 @@ namespace MediaPortal.GUI.Library
 
     #endregion Properties
 
+    public virtual List<GUIControl> AllChildren
+    {
+      get { return null; }
+    }
+    
     public List<VisualEffect> Animations
     {
       get { return _animations; }

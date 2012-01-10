@@ -1569,5 +1569,38 @@ namespace MediaPortal.GUI.Library
       }
       return true;
     }
+
+    public override List<GUIControl> AllChildren
+    {
+      get
+      {
+        List<GUIControl> result = new List<GUIControl>();
+        if (_layoutList != null)
+        {
+          result.Add(_layoutList);
+        }
+        if (_layoutAlbum != null)
+        {
+          result.Add(_layoutAlbum);
+        }
+        if (_layoutThumbnail != null)
+        {
+          result.Add(_layoutThumbnail);
+        }
+        if (_layoutPlayList != null)
+        {
+          result.Add(_layoutPlayList);
+        }
+        if (_layoutFilmStrip != null)
+        {
+          result.Add(_layoutFilmStrip);
+        }
+        if (_layoutCoverFlow != null)
+        {
+          result.Add(_layoutCoverFlow);
+        }
+        return result;
+      }
+    }
   }
 }

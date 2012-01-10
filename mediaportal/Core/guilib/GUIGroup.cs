@@ -59,6 +59,7 @@ namespace MediaPortal.GUI.Library
       }
       control.DimColor = DimColor;
       Children.Add(control);
+      if (_allChildren != null) _allChildren.Clear();
     }
 
     public override bool Dimmed
@@ -329,6 +330,7 @@ namespace MediaPortal.GUI.Library
       }
       cntl.DimColor = DimColor;
       Children.Add(cntl);
+      if (_allChildren != null) _allChildren.Clear();
     }
 
     void IAddChild.AddText(string text) {}
@@ -440,6 +442,7 @@ namespace MediaPortal.GUI.Library
     private Point[] _modPositions = null;
     private bool[] _visibilityState = null;
     private bool _first = true;
+    private List<GUIControl> _allChildren = null;
 
     [XMLSkinElement("layout")] private ILayout _layout;
 
@@ -508,10 +511,17 @@ namespace MediaPortal.GUI.Library
     public override void UpdateVisibility()
     {
       base.UpdateVisibility();
+
       if (Children == null)
       {
         return;
       }
+
+      for (int i = 0; i < Children.Count; i++)
+      {
+        Children[i].UpdateVisibility();
+      }
+
       if (_layout == null)
       {
         return;
@@ -734,6 +744,26 @@ namespace MediaPortal.GUI.Library
         }
       }
       return false;
+    }
+
+    public override List<GUIControl> AllChildren
+    {
+      get
+      {
+        if (_allChildren == null)
+        {
+          _allChildren = new List<GUIControl>();
+          _allChildren.AddRange(Children);
+          foreach (GUIControl ctl in Children)
+          {
+            List<GUIControl> ctlChildren = ctl.AllChildren;
+            if (ctlChildren != null)
+              _allChildren.AddRange(ctlChildren);
+          }
+          return _allChildren;
+        }
+        return _allChildren;
+      }
     }
   }
 }
