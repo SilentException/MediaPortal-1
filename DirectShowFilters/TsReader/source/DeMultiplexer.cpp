@@ -52,9 +52,6 @@
 //#define INITIAL_READ_SIZE (READ_SIZE * 1024)
 #define INITIAL_READ_SIZE (READ_SIZE * 512)
 
-#define AUDIO_CHANGE 0x1
-#define VIDEO_CHANGE 0x2
-
 extern void LogDebug(const char *fmt, ...);
 extern DWORD m_tGTStartTime;
 
@@ -103,6 +100,7 @@ CDeMultiplexer::CDeMultiplexer(CTsDuration& duration,CTsReaderFilter& filter)
   m_bStarting=false;
   m_bReadAheadFromFile = false;
   m_mpegParserTriggerFormatChange = false;
+  m_mpegParserReset = true;
   m_videoChanged=false;
   m_audioChanged=false;
   SetMediaChanging(false);
@@ -118,6 +116,7 @@ CDeMultiplexer::CDeMultiplexer(CTsDuration& duration,CTsReaderFilter& filter)
   m_bFirstGopFound = false;
   m_bSecondGopFound = false;
   m_bFrame0Found = false;
+  m_bFirstGopParsed = false;
   m_lastVidResX=-1 ;
   m_lastVidResY=-1 ;
   m_FirstVideoSample = 0x7FFFFFFF00000000LL;
@@ -388,12 +387,15 @@ bool CDeMultiplexer::GetSubtitleStreamType(__int32 stream, __int32 &type)
   return S_OK;
 }
 
-void CDeMultiplexer::GetVideoStreamType(CMediaType &pmt)
+bool CDeMultiplexer::GetVideoStreamType(CMediaType &pmt)
 {
-  if( m_pids.videoPids.size() != 0 && m_mpegPesParser != NULL)
+  if( m_pids.videoPids.size() != 0 && m_mpegPesParser != NULL && m_bFirstGopParsed)
   {
+    CAutoLock lock (&m_mpegPesParser->m_sectionVideoPmt);
     pmt = m_mpegPesParser->pmt;
+    return true;
   }
+  return false;
 }
 
 void CDeMultiplexer::FlushVideo()
@@ -429,6 +431,7 @@ void CDeMultiplexer::FlushVideo()
   m_bFirstGopFound = false;
   m_bSecondGopFound = false;
   m_bFrame0Found = false;
+  m_mpegParserReset = true;
   m_FirstVideoSample = 0x7FFFFFFF00000000LL;
   m_LastVideoSample = 0;
   m_lastVideoPTS.IsValid = false;
@@ -693,6 +696,7 @@ void CDeMultiplexer::Start()
   m_bStarting=true ;
   m_receivedPackets=0;
   m_mpegParserTriggerFormatChange=false;
+  m_mpegParserReset = true;
   m_videoChanged=false;
   m_audioChanged=false;
   m_bEndOfFile=false;
@@ -1412,7 +1416,20 @@ void CDeMultiplexer::FillVideoH264(CTsHeader& header, byte* tsPacket)
 //          int lastVidResX=m_mpegPesParser->basicVideoInfo.width;
 //          int lastVidResY=m_mpegPesParser->basicVideoInfo.height;
 
-          bool Gop = m_mpegPesParser->OnTsPacket(p->GetData(), p->GetCount(), false);
+          bool Gop = m_mpegPesParser->OnTsPacket(p->GetData(), p->GetCount(), false, m_mpegParserReset);
+          if (Gop)
+          {
+            m_mpegParserReset = true; //Reset next time around (so that it always searches for a full 'Gop' header)
+            if (!m_bFirstGopParsed)
+            {
+              m_bFirstGopParsed = true;
+              LogDebug("DeMultiplexer: First Gop parsed after new PAT: res=%dx%d AR=%d:%d fps=%d isInterlaced=%d",m_mpegPesParser->basicVideoInfo.width,m_mpegPesParser->basicVideoInfo.height,m_mpegPesParser->basicVideoInfo.arx,m_mpegPesParser->basicVideoInfo.ary,m_mpegPesParser->basicVideoInfo.fps,m_mpegPesParser->basicVideoInfo.isInterlaced);
+            }
+          }
+          else
+          {
+            m_mpegParserReset = false;
+          }
 
           if ((Gop || m_bFirstGopFound) && m_filter.GetVideoPin()->IsConnected())
           {
@@ -1482,7 +1499,7 @@ void CDeMultiplexer::FillVideoH264(CTsHeader& header, byte* tsPacket)
 
             if (m_vecVideoBuffers.size()<=MAX_BUF_SIZE)
             {
-              if (m_bSecondGopFound)
+              if (m_bFirstGopFound)
               {
                 // ownership is transfered to vector
                 m_vecVideoBuffers.push_back(pCurrentVideoBuffer);
@@ -1783,7 +1800,21 @@ void CDeMultiplexer::FillVideoMPEG2(CTsHeader& header, byte* tsPacket)
 //            int lastVidResX=m_mpegPesParser->basicVideoInfo.width;
 //            int lastVidResY=m_mpegPesParser->basicVideoInfo.height;
 
-            bool Gop = m_mpegPesParser->OnTsPacket(p->GetData(), p->GetCount(), true);
+            bool Gop = m_mpegPesParser->OnTsPacket(p->GetData(), p->GetCount(), true, m_mpegParserReset);
+            if (Gop)
+            {
+              m_mpegParserReset = true; //Reset next time around (so that it always searches for a full 'Gop' header)
+              if (!m_bFirstGopParsed)
+              {
+                m_bFirstGopParsed = true;
+                LogDebug("DeMultiplexer: First Gop parsed after new PAT: res=%dx%d AR=%d:%d fps=%d isInterlaced=%d",m_mpegPesParser->basicVideoInfo.width,m_mpegPesParser->basicVideoInfo.height,m_mpegPesParser->basicVideoInfo.arx,m_mpegPesParser->basicVideoInfo.ary,m_mpegPesParser->basicVideoInfo.fps,m_mpegPesParser->basicVideoInfo.isInterlaced);
+              }
+            }
+            else
+            {
+              m_mpegParserReset = false;
+            }
+
             if (Gop) m_LastValidFrameCount=-1;
 
             if ((Gop || m_bFirstGopFound) && m_filter.GetVideoPin()->IsConnected())
@@ -2244,6 +2275,9 @@ void CDeMultiplexer::OnNewChannel(CChannelInfo& info)
     {
       m_videoChanged=true;
     }
+    //Temp Hack alert !!!
+    //m_videoChanged=true;
+    //LogDebug("OnNewChannel: Force video graph rebuild (temporary workaround)");    
   }
   #else
   //did the video format change?
@@ -2303,6 +2337,9 @@ void CDeMultiplexer::OnNewChannel(CChannelInfo& info)
         }
       }
       m_mpegParserTriggerFormatChange=true;
+      m_mpegParserReset = true;
+      m_bFirstGopParsed = false;
+      m_mpegPesParser->basicVideoInfo.isValid = false; 
     }
     else
     {

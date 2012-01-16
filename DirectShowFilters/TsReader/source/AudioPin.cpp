@@ -305,6 +305,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
         m_FillBuffSleepTime = 5;
         CreateEmptySample(pSample);
         m_bDiscontinuity = TRUE; //Next good sample will be discontinuous
+        m_sampleCount = 0;
         m_bInFillBuffer = false;
         return NOERROR;
       }
@@ -319,6 +320,9 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
       else
       {
         buffer=NULL;
+        //Force discon and add pmt to next good sample
+        m_sampleCount = 0;
+        m_bDiscontinuity=true;
       }
 
       //did we reach the end of the file
@@ -497,15 +501,22 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           if (m_bDiscontinuity || buffer->GetDiscontinuity())
           {
             //ifso, set it
-            LogDebug("audPin:set discontinuity L:%d B:%d fTime:%03.3f", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime);
             pSample->SetDiscontinuity(TRUE);
 
-            //  Adding the pmt seems to cause hangs with LAV Audio....
-            //  CMediaType mt; 
-            //  int audioIndex = 0;
-            //  demux.GetAudioStream(audioIndex);
-            //  demux.GetAudioStreamType(audioIndex, mt);
-            //  pSample->SetMediaType(&mt);            
+            if (m_sampleCount == 0) 
+            {
+              //Add MediaType info to first sample after OnThreadStartPlay()
+              CMediaType mt; 
+              int audioIndex = 0;
+              demux.GetAudioStream(audioIndex);
+              demux.GetAudioStreamType(audioIndex, mt);
+              pSample->SetMediaType(&mt);            
+              LogDebug("audPin: Add pmt and set discontinuity L:%d B:%d fTime:%03.3f SampCnt:%d", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime, m_sampleCount);
+            }   
+            else
+            {        
+              LogDebug("audPin: Set discontinuity L:%d B:%d fTime:%03.3f SampCnt:%d", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime, m_sampleCount);
+            }
 
             m_bDiscontinuity=FALSE;
           }
@@ -541,6 +552,7 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           delete buffer;
           demux.EraseAudioBuff();
           //Sleep(sampSleepTime) ;
+          m_sampleCount++ ;
         }
         else
         { // Buffer was not displayed because it was out of date, search for next.
@@ -550,7 +562,6 @@ HRESULT CAudioPin::FillBuffer(IMediaSample *pSample)
           m_bDiscontinuity = TRUE; //Next good sample will be discontinuous
           //Sleep(1) ;
         }
-        m_sampleCount++ ;
       }      
       earlyStall = false;
     } while (buffer==NULL);

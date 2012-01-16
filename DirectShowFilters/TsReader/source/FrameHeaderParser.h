@@ -322,6 +322,8 @@ struct pshdr
 			ar = 0;
 			arx = 0;
 			ary = 0;
+			width = 0;
+			height = 0;
 		}
 	};
 
@@ -377,7 +379,7 @@ public:
 	bool Read(pshdr& h);
 	bool Read(pssyshdr& h);
 	bool Read(peshdr& h, BYTE code);
-	bool Read(seqhdr& h, int len, CMediaType* pmt = NULL);
+	bool Read(seqhdr& h, int len, CMediaType* pmt = NULL, bool reset = true);
 	bool Read(mpahdr& h, int len, bool fAllowV25, CMediaType* pmt = NULL);
 	bool Read(aachdr& h, int len, CMediaType* pmt = NULL);
 	bool Read(ac3hdr& h, int len, CMediaType* pmt = NULL);
@@ -393,7 +395,7 @@ public:
 	bool Read(trhdr& h, bool fSync = true);
 	bool Read(trsechdr& h);
 	bool Read(pvahdr& h, bool fSync = true);
-	bool Read(avchdr& h, int len, CMediaType* pmt = NULL);
+	bool Read(avchdr& h, int len, CMediaType* pmt = NULL, bool reset = true);
 	bool Read(vc1hdr& h, int len, CMediaType* pmt = NULL);
 
 	void RemoveMpegEscapeCode(BYTE* dst, BYTE* src, int length);

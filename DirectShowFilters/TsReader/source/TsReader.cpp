@@ -181,8 +181,8 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   GetLogFile(filename);
   ::DeleteFile(filename);
   LogDebug("--- Buffer-empty rate control testing ----");
-  LogDebug("---------- v0.0.42 XXX -------------------");
-
+  LogDebug("---------- v0.0.42e XXX -------------------");
+  
   m_fileReader=NULL;
   m_fileDuration=NULL;
   Compensation=CRefTime(0L);
@@ -1268,7 +1268,7 @@ void CTsReaderFilter::SeekPreStart(CRefTime& rtAbsSeek)
     {  
       //LogDebug("CTsReaderFilter::--SeekPreStart() Wait vid sample delivery"); 
       int i=0;
-      //Wait for video pin sample delivery
+      //Wait for video pin sample delivery - workaround for video decoders hanging....
       while ((i < 500) && !m_demultiplexer.IsAudioChanging() && !m_demultiplexer.IsMediaChanging() && !m_bStopping && (m_State != State_Stopped) && !GetVideoPin()->HasDeliveredSample())
       {
         Sleep(1);
@@ -1276,21 +1276,11 @@ void CTsReaderFilter::SeekPreStart(CRefTime& rtAbsSeek)
       }
       if ((i >= 500) && !m_demultiplexer.IsAudioChanging() && !m_demultiplexer.IsMediaChanging() && !m_bStopping && (m_State != State_Stopped))
       {
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry start");       
-        GetVideoPin()->DeliverBeginFlush();
-        Sleep(50);
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry Stop");       
-        GetVideoPin()->Stop();
-        Sleep(50);
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry Run");       
-        GetVideoPin()->Run();
-        Sleep(50);
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry DeliverEndFlush");       
-        GetVideoPin()->DeliverEndFlush();      
-        Sleep(50);
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry SetDiscontinuity");       
-        GetVideoPin()->SetDiscontinuity(true);
-        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample retry end");
+        LogDebug("CTsReaderFilter: SeekPreStart: NotDeliveredSample error!! - force graph rebuild");       
+        m_demultiplexer.SetMediaChanging(true);
+        OnMediaTypeChanged(VIDEO_CHANGE | AUDIO_CHANGE);
+        SetWaitDataAfterSeek(false);           
+        return ;
       }
     }
     

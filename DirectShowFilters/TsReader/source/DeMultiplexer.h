@@ -95,7 +95,7 @@ public:
 
   void       GetAudioStreamInfo(int stream,char* szName);
   void       GetAudioStreamType(int stream,CMediaType&  pmt);
-  void       GetVideoStreamType(CMediaType &pmt);
+  bool       GetVideoStreamType(CMediaType &pmt);
   int        GetAudioStreamCount();
 
   // TsReader::ISubtitleStream uses these
@@ -276,5 +276,8 @@ private:
   
   int m_lastVidResX;
   int m_lastVidResY;
+  
+  bool m_mpegParserReset;
+  bool m_bFirstGopParsed;
 
 };

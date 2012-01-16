@@ -33,6 +33,9 @@
 #include "ITeletextSource.h"
 #include <map>
 
+#define AUDIO_CHANGE 0x1
+#define VIDEO_CHANGE 0x2
+
 #define INIT_SHOWBUFFERVIDEO 20
 #define INIT_SHOWBUFFERAUDIO 10
 #define FS_TIM_LIM (2*1000*10000) //2 seconds in hns units

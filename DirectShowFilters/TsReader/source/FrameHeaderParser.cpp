@@ -298,8 +298,15 @@ bool CFrameHeaderParser::Read(peshdr& h, BYTE code)
 	return(true);
 }
 
-bool CFrameHeaderParser::Read(seqhdr& h, int len, CMediaType* pmt)
+bool CFrameHeaderParser::Read(seqhdr& h, int len, CMediaType* pmt, bool reset)
 {
+  if (reset)
+  {
+    h.ifps=0;
+    h.height=0;
+    h.width=0;
+  }
+
 	__int64 endpos = GetPos() + len; // - sequence header length
 
 	BYTE id = 0;
@@ -1183,8 +1190,17 @@ void CFrameHeaderParser::RemoveMpegEscapeCode(BYTE* dst, BYTE* src, int length)
 }
 
 
-bool CFrameHeaderParser::Read(avchdr& h, int len, CMediaType* pmt)
+bool CFrameHeaderParser::Read(avchdr& h, int len, CMediaType* pmt, bool reset)
 {
+  if (reset)
+  {
+    h.spslen=0;
+    h.ppslen=0;
+    h.height=0;
+    h.width=0;
+    h.AvgTimePerFrame=0;
+  }
+  
 	while(GetRemaining()>4 && (h.spslen==0 || h.ppslen==0 || h.height<100 || h.width<100 || h.AvgTimePerFrame<=0))
 	{
 		//// check for NALU startcode
@@ -1459,6 +1475,7 @@ bool CFrameHeaderParser::Read(avchdr& h, int len, CMediaType* pmt)
 		vi->dwLevel = h.level;
 		vi->cbSequenceHeader = extra;
 		vi->dwStartTimeCode=0;
+		
 		BYTE* p = (BYTE*)&vi->dwSequenceHeader[0];
 		*p++ = (h.spslen-4) >> 8;
 		*p++ = (h.spslen-4) & 0xff;

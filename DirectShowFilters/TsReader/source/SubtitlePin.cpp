@@ -165,17 +165,17 @@ HRESULT CSubtitlePin::CheckConnect(IPin *pReceivePin)
 HRESULT CSubtitlePin::CompleteConnect(IPin *pReceivePin)
 {
   m_bInFillBuffer=false;
-  LogDebug("pin:CompleteConnect()");
+  LogDebug("subPin:CompleteConnect()");
   HRESULT hr = CBaseOutputPin::CompleteConnect(pReceivePin);
 
   if (SUCCEEDED(hr))
   {
-    LogDebug("pin:CompleteConnect() done");
+    LogDebug("subPin:CompleteConnect() done");
     m_bConnected=true;
   }
   else
   {
-    LogDebug("pin:CompleteConnect() failed:%x",hr);
+    LogDebug("subPin:CompleteConnect() failed:%x",hr);
   }
 
   if (m_pTsReaderFilter->IsTimeShifting())

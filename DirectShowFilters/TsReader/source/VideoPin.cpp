@@ -96,12 +96,28 @@ STDMETHODIMP CVideoPin::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
 
 HRESULT CVideoPin::GetMediaType(CMediaType *pmt)
 {
-  //LogDebug("vidPin:GetMediaType()");
   CDeMultiplexer& demux=m_pTsReaderFilter->GetDemultiplexer();
-  demux.GetVideoStreamType(*pmt);
-
+  //LogDebug("vidPin:GetMediaType() 0");
+  for (int i=0; i < 1000; i++) //Wait up to 1 sec for pmt to be valid
+  {
+    if (demux.GetVideoStreamType(*pmt)) 
+    {
+      //LogDebug("vidPin:GetMediaType() 1");
+      return S_OK;
+    }
+    Sleep(1);
+  }
+  //LogDebug("vidPin:GetMediaType() 2");
   return S_OK;
 }
+
+//HRESULT CVideoPin::GetMediaType(CMediaType *pmt)
+//{
+//  CDeMultiplexer& demux=m_pTsReaderFilter->GetDemultiplexer();
+//  demux.GetVideoStreamType(*pmt);
+//  LogDebug("vidPin:GetMediaType()");
+//  return S_OK;
+//}
 
 HRESULT CVideoPin::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pRequest)
 {
@@ -327,6 +343,7 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
         m_FillBuffSleepTime = 5;
         CreateEmptySample(pSample);
         m_bDiscontinuity = TRUE; //Next good sample will be discontinuous
+        m_sampleCount = 0;
         m_bInFillBuffer = false;
         return NOERROR;
       }
@@ -348,8 +365,8 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
         //      	  sampSleepTime = 1;
         //        }
 
-        DWORD sampSleepTime = max(1,(DWORD)(frameTime/8.0));       
-        if ((buffCnt == 0) || (buffCnt > 4))
+        DWORD sampSleepTime = max(1,(DWORD)(frameTime/4.0));       
+        if ((buffCnt == 0) || (buffCnt > 5) || (m_dRateSeeking != 1.0))
         {
       	  sampSleepTime = 1;
         }
@@ -364,6 +381,9 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
       else
       {
         buffer=NULL;
+        //Force discon and add pmt to next good sample
+        m_sampleCount = 0;
+        m_bDiscontinuity=true;
       }
 
       //did we reach the end of the file
@@ -471,13 +491,19 @@ HRESULT CVideoPin::FillBuffer(IMediaSample *pSample)
             {
               //Add MediaType info to first sample after OnThreadStartPlay()
               CMediaType mt; 
-              demux.GetVideoStreamType(mt);
-              pSample->SetMediaType(&mt); 
-              LogDebug("vidPin: Add pmt and set discontinuity L:%d B:%d fTime:%03.3f", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime);
+              if (demux.GetVideoStreamType(mt))
+              {
+                pSample->SetMediaType(&mt); 
+                LogDebug("vidPin: Add pmt and set discontinuity L:%d B:%d fTime:%03.3f SampCnt:%d", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime, m_sampleCount);
+              }
+              else
+              {
+                LogDebug("vidPin: Add pmt failed - set discontinuity L:%d B:%d fTime:%03.3f SampCnt:%d", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime, m_sampleCount);
+              }
             }   
             else
             {        
-              LogDebug("vidPin: Set discontinuity L:%d B:%d fTime:%03.3f", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime);
+              LogDebug("vidPin: Set discontinuity L:%d B:%d fTime:%03.3f SampCnt:%d", m_bDiscontinuity, buffer->GetDiscontinuity(), (float)fTime, m_sampleCount);
             }
 
             pSample->SetDiscontinuity(TRUE);           
