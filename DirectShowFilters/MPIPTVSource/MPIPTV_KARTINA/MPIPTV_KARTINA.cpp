@@ -243,6 +243,19 @@ int CMPIPTV_KARTINA::OpenConnection(void)
 
         if (retval == STATUS_OK)
         {
+          // replace space in new url with %20
+          TCHAR *tempNewUrl = ReplaceString(newUrl, _T(" "), _T("%20"));
+          retval = (tempNewUrl == NULL) ? STATUS_ERROR : STATUS_OK;
+
+          if (retval == STATUS_OK)
+          {
+            FREE_MEM(newUrl);
+            newUrl = tempNewUrl;
+          }
+        }
+
+        if (retval == STATUS_OK)
+        {
           // if successfully converted to Unicode (if needed), try parse url
           this->logger.Log(LOGGER_INFO, _T("%s: %s: new url: %s"), PROTOCOL_IMPLEMENTATION_NAME, METHOD_OPEN_CONNECTION_NAME, newUrl);
           // ParseUrl() calls ClearSession() which set this->requestUrl to NULL !

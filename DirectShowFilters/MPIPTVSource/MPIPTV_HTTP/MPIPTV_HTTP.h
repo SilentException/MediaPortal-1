@@ -43,8 +43,8 @@
 #define CONFIGURATION_HTTP_INTERNAL_BUFFER_MAX_MULTIPLIER   _T("HttpInternalBufferMaxMultiplier")
 #define CONFIGURATION_HTTP_OPEN_CONNECTION_MAXIMUM_ATTEMPTS _T("HttpOpenConnectionMaximumAttempts")
 
-#define HTTP_NON_STANDARD_REQUEST_FORMAT                    _T("GET %s HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: vlc/1.1.8\r\nRange: bytes=0-\r\nIcy-MetaData: 1\r\n\r\n")
-#define HTTP_STANDARD_REQUEST_FORMAT                        _T("GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: vlc/1.1.8\r\nRange: bytes=0-\r\nIcy-MetaData: 1\r\n\r\n")
+#define HTTP_NON_STANDARD_REQUEST_FORMAT                    _T("GET %s HTTP/1.1\r\nHost: %s:%d\r\nUser-Agent: vlc/1.1.8\r\nRange: bytes=0-\r\n\r\n")
+#define HTTP_STANDARD_REQUEST_FORMAT                        _T("GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: vlc/1.1.8\r\nRange: bytes=0-\r\n\r\n")
 
 // returns protocol class instance
 PIProtocol CreateProtocolInstance(void);
