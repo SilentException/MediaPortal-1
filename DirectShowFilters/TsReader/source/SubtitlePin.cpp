@@ -61,7 +61,7 @@ CSubtitlePin::CSubtitlePin(LPUNKNOWN pUnk, CTsReaderFilter *pFilter, HRESULT *ph
 
 CSubtitlePin::~CSubtitlePin()
 {
-  LogDebug("sub pin:dtor()");
+  LogDebug("subPin:dtor()");
 }
 
 bool CSubtitlePin::IsInFillBuffer()

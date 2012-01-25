@@ -78,7 +78,7 @@ CAudioPin::CAudioPin(LPUNKNOWN pUnk, CTsReaderFilter *pFilter, HRESULT *phr,CCri
 
 CAudioPin::~CAudioPin()
 {
-  LogDebug("pin:dtor()");
+  LogDebug("audPin:dtor()");
 }
 STDMETHODIMP CAudioPin::NonDelegatingQueryInterface( REFIID riid, void ** ppv )
 {

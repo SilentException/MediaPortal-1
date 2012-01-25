@@ -64,6 +64,7 @@ CVideoPin::CVideoPin(LPUNKNOWN pUnk, CTsReaderFilter *pFilter, HRESULT *phr,CCri
 
 CVideoPin::~CVideoPin()
 {
+  LogDebug("vidPin:dtor()");
 }
 
 bool CVideoPin::IsInFillBuffer()

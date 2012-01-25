@@ -182,6 +182,7 @@ public:
   bool            IsTimeShifting();
   bool            IsRTSP();
   bool            IsUNCfile();
+  bool            IsLiveTV();
   CTsDuration&    GetDuration();
   FILTER_STATE    State() {return m_State;};
   void            DeltaCompensation(REFERENCE_TIME deltaComp);
