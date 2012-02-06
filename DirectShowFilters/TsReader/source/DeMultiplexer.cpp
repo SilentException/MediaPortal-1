@@ -775,14 +775,16 @@ int CDeMultiplexer::ReadAheadFromFile()
 	//LogDebug("demux:ReadAheadFromFile");
   int SizeRead = ReadFromFile(false,false) ;
   
-  if (m_bAudioVideoReady && (SizeRead >= 0) && (SizeRead < (m_filter.IsUNCfile() ? MIN_READ_SIZE_UNC : MIN_READ_SIZE)))
+  if (m_filter.State() != State_Running)
   {
-    // No buffer and nothing to read....
-    if ((m_vecAudioBuffers.size()==0) || (m_vecVideoBuffers.size()==0))
-    {
-      //Running very low on data
-      _InterlockedIncrement(&m_AVDataLowCount);   
-    }           
+    _InterlockedAnd(&m_AVDataLowCount, 0);
+  }
+  else if (m_bAudioVideoReady 
+           && (SizeRead >= 0) && (SizeRead < (m_filter.IsUNCfile() ? MIN_READ_SIZE_UNC : MIN_READ_SIZE))
+           && ((m_vecAudioBuffers.size()==0) || (m_vecVideoBuffers.size()==0)))
+  {
+    // No buffer and nothing to read....Running very low on data
+    _InterlockedIncrement(&m_AVDataLowCount);   
   }
 
   return SizeRead;

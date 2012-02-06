@@ -181,7 +181,7 @@ CTsReaderFilter::CTsReaderFilter(IUnknown *pUnk, HRESULT *phr):
   GetLogFile(filename);
   ::DeleteFile(filename);
   LogDebug("--- Buffer-empty rate control testing ----");
-  LogDebug("---------- v0.0.44 XXX -------------------");
+  LogDebug("---------- v0.0.45 XXX -------------------");
   
   m_fileReader=NULL;
   m_fileDuration=NULL;
@@ -1368,8 +1368,10 @@ void CTsReaderFilter::ThreadProc()
   {
     //if demuxer reached the end of the file, we can skip the loop
     //since we're no longer playing
-    if (m_demultiplexer.EndOfFile())
+    if (m_demultiplexer.EndOfFile() || (m_State == State_Stopped))
     {
+      lastDurUpdate = 0;
+      durationUpdateLoop = 1;
       continue;
     }
 
@@ -1396,7 +1398,12 @@ void CTsReaderFilter::ThreadProc()
     }
 
     //Buffer underrun handling for timeshifting
-    if (m_demultiplexer.m_AVDataLowCount > underRunLimit)
+    if (m_State != State_Running)
+    {
+      lastDataLowTime = timeNow;
+      _InterlockedAnd(&m_demultiplexer.m_AVDataLowCount, 0);
+    }
+    else if (m_demultiplexer.m_AVDataLowCount > underRunLimit)
     {      
       if (timeNow < (lastDataLowTime + pauseWaitTime))
       {
@@ -1456,7 +1463,7 @@ void CTsReaderFilter::ThreadProc()
         //no, then get the duration from the local file
         if (m_demultiplexer.m_bAudioVideoReady) //Normal play started
         {          
-          if(durationUpdateLoop == 2 || m_bRecording)
+          if((durationUpdateLoop == 2) || m_bRecording || (m_State==State_Paused))
           {
             CTsDuration duration;
             duration.SetFileReader(m_fileDuration);
@@ -1476,7 +1483,7 @@ void CTsReaderFilter::ThreadProc()
                 isLiveCount = 2;
       
                 // Is graph running?
-                if (m_State == State_Running||m_State==State_Paused)
+                if (m_State != State_Stopped)
                 {
                   //yes, then send a EC_LENGTH_CHANGED event to the graph
                   NotifyEvent(EC_LENGTH_CHANGED, NULL, NULL);
@@ -1516,7 +1523,7 @@ void CTsReaderFilter::ThreadProc()
             m_duration.Set( pcrStart, pcrEnd, pcrMax); // Continuous update
   
             // Is graph running?
-            if ((m_State == State_Running) || (m_State==State_Paused))
+            if (m_State != State_Stopped)
             {
               //yes, then send a EC_LENGTH_CHANGED event to the graph
               NotifyEvent(EC_LENGTH_CHANGED, NULL, NULL);
@@ -1630,7 +1637,7 @@ void CTsReaderFilter::ThreadProc()
     
     Sleep(1);
   }
-  while (!ThreadIsStopping(110)) ;
+  while (!ThreadIsStopping(105)) ;
   LogDebug("CTsReaderFilter::ThreadProc stopped()");
 }
 
